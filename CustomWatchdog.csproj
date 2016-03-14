@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApplicationLoader.cs" />
     <Compile Include="CustomBatchWatchdog.cs">
       <SubType>Component</SubType>
     </Compile>

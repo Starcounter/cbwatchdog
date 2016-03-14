@@ -1,32 +1,77 @@
 ﻿using System.IO;
 using System.ServiceProcess;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System;
+using System.Threading;
+using Toolkit;
 
 namespace CustomWatchdog {
 
    public partial class CustomBatchWatchdog : ServiceBase {
 
-      public CustomBatchWatchdog () { InitializeComponent(); }
+      const int sleepTime = 500;    // time between consequitive checks
+      const int bufferTime = 500;   // time to let whole suite started
+      string healingBatch = "";
+      const string fileName = "watchprocs.cfg";
+      List<string> procNames = new List<string>();
+
+      private void LoadFile () {
+         try {
+            using (StreamReader file = new StreamReader(fileName)) {
+               string line;
+               healingBatch = file.ReadLine();
+               while ((line = file.ReadLine()) != null) {
+                  procNames.Add(line);
+               }
+               file.Close();
+            }
+         } catch (IOException) {
+            throw new Exception("Problem reading config file " + fileName);
+         }
+      }
+
+      private void Recover () {
+         //System.Diagnostics.Process.Start(healingBatch);
+         ApplicationLoader.PROCESS_INFORMATION procInfo;
+         ApplicationLoader.StartProcessAndBypassUAC(healingBatch, out procInfo);
+      }
+
+      private bool Check () {
+         Process[] processlist = Process.GetProcesses();
+         foreach (string procName in procNames) {
+            bool found = false;
+            foreach (Process theprocess in processlist) {
+               if (theprocess.ProcessName.Equals(procName)) {
+                  found = true;
+                  break;
+               }
+            }
+            if (!found) {
+               return false;
+            }
+         }
+         return true;
+      }
+
+      private void RunForever () {
+         while (true) {
+            if (!Check()) {
+               Recover();
+               Thread.Sleep(bufferTime);
+            } else {
+               Thread.Sleep(sleepTime);
+            }
+         }
+      }
 
       protected override void OnStart (string[] args) {
-         FileStream fs = new FileStream (
-            @"c:\CustomWatchdogLog.txt",
-            FileMode.OpenOrCreate, FileAccess.Write);
-         StreamWriter m_streamWriter = new StreamWriter (fs);
-         m_streamWriter.BaseStream.Seek (0, SeekOrigin.End);
-         m_streamWriter.WriteLine("CustomBatchWatchdog: Service Started \n");
-         m_streamWriter.Flush ();
-         m_streamWriter.Close ();
+         LoadFile();
+         ThreadPool.QueueUserWorkItem(o => { RunForever(); });
+
       }
 
-      protected override void OnStop () {
-         FileStream fs = new FileStream (
-            @"c:\CustomWatchdogLog.txt",
-            FileMode.OpenOrCreate, FileAccess.Write);
-         StreamWriter m_streamWriter = new StreamWriter (fs);
-         m_streamWriter.BaseStream.Seek (0, SeekOrigin.End);
-         m_streamWriter.WriteLine ("CustomBatchWatchdog: Service Stopped \n");
-         m_streamWriter.Flush ();
-         m_streamWriter.Close ();
-      }
+      public CustomBatchWatchdog () { InitializeComponent(); }
+      protected override void OnStop () { }
    }
 }
