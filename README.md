@@ -13,9 +13,35 @@ The Windows system service ```Custom Batch Watchdog``` (```cbwatchdog```) watche
 5. Navigate to a services management console (```Win+R``` -> ```services.msc``` -> ```Enter```) and hit ```Start the service```: ![](Service-Start.png)
 6. Notice that ```notepad``` is now running. Try to close ```notepad``` and see what happens.
 
-The service is installed with ```Manual``` type of startup. In order to have the watchdog fire up at a system startup, change the startup type to ```Automatic``` by right-clicking on a service and choosing the type: ![](Service-Start-2.png)   Now, if you restart Windows, the first thing you'll see after reboot is ```notepad```.
+The service is installed with ```Manual``` type of startup. In order to have the watchdog fire up at a system startup, change the startup type to ```Automatic``` by right-clicking on a service and choosing the type: ![](Service-Start-2.png)
+
+Now, if you restart Windows, the first thing you'll see after reboot is ```notepad```.
 
 ### Diagnostics
+
+### Elevated mode to run recovery
+
+After Windows Vista system servcies can no longer start processes with GUI. In order to have watched processes with GUI, ```cbwatchdog``` is extended with a feature to run the recovery batch in an elevated (full-Admin rights) mode with all limitations supressed. To enable it set ```elevatedModeRecovery``` to ```true```.
+
+### Defaults and obligatory options
+
+In ```cbwatchdog.json``` one must always provide a list of processes. E.g., this is the minimal possible ```cbwatchdog.json```:
+
+```
+{
+   "processes": ["notepad"]
+}
+```
+
+Other options are optional. Not being provided in the json file, the defaults are:
+
+```
+      string recoveryBatch = "cbwatchdog.bat";
+      int healthCheckInterval = 500;
+      int recoveryPauseInterval = 500;
+      int criticalCounts = 10;
+      bool elevatedModeRecovery = false;
+```
 
 ### Uninstallation
 
