@@ -13,8 +13,7 @@ The Windows system service ```Custom Batch Watchdog``` (```cbwatchdog```) watche
 5. Navigate to a services management console (```Win+R``` -> ```services.msc``` -> ```Enter```) and hit ```Start the service```: ![](Service-Start.png)
 6. Notice that ```notepad``` is now running. Try to close ```notepad``` and see what happens.
 
-The service is installed with ```Manual``` type of startup. In order to have the watchdog fire up at a system startup, change the startup type to ```Automatic``` by right-clicking on a service and choosing the type: ![](Service-Start-2.png)
-Now, if you restart Windows, the first thing you'll see after reboot is ```notepad```.
+The service is installed with ```Manual``` type of startup. In order to have the watchdog fire up at a system startup, change the startup type to ```Automatic``` by right-clicking on a service and choosing the type: ![](Service-Start-2.png)   Now, if you restart Windows, the first thing you'll see after reboot is ```notepad```.
 
 ### Diagnostics
 
