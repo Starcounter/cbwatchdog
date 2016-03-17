@@ -19,13 +19,17 @@ Now, if you restart Windows, the first thing you'll see after reboot is ```notep
 
 ### Diagnostics
 
+The watchdog writes all events to a system log. Here is what you typically see via Windows Event Viewer:
+
+![](./docs/Service-Start-3.png)
+
 ### Elevated mode to run recovery
 
 After Windows Vista system servcies can no longer start processes with GUI. In order to have watched processes with GUI, ```cbwatchdog``` is extended with a feature to run the recovery batch in an elevated (full-Admin rights) mode with all limitations supressed. To enable it set ```elevatedModeRecovery``` to ```true```.
 
 ### Defaults and obligatory options
 
-In ```cbwatchdog.json``` one must always provide a list of processes. E.g., this is the minimal possible ```cbwatchdog.json```:
+In ```cbwatchdog.json``` one must always provide a list of processes to watch. E.g., this is the minimal possible ```cbwatchdog.json```:
 
 ```
 {
