@@ -49,4 +49,4 @@ bool elevatedModeRecovery = false;
 
 ### Uninstallation
 
-Open Admin-rights command prompt, go to your service exe location and fire ```installutil /u cbwatchdog.exe```.
+Open Admin-rights command prompt, go to your service exe location and fire ```installutil /u cbwatchdog.exe```. A faster way is to type: ```sc delete "Custom Batch Watchdog"```.
