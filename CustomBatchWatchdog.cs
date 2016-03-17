@@ -14,9 +14,22 @@ namespace CustomWatchdog {
       const int bufferTime = 500;   // time to let whole suite started
       string healingBatch = "";
       const string fileName = "watchprocs.cfg";
+      const string elogSource = "Custom Batch Watchdog";
       List<string> procNames = new List<string>();
 
-      private void LoadFile () {
+      private void InitEventLog () {
+         if (!EventLog.SourceExists(elogSource))
+            EventLog.CreateEventSource(elogSource, "Application");
+      }
+
+      private void PrintWarning (string evt)
+         { EventLog.WriteEntry(elogSource, evt, EventLogEntryType.Warning, 0x01); }
+      private void PrintError (string evt)
+         { EventLog.WriteEntry(elogSource, evt, EventLogEntryType.Error, 0x02); }
+      private void PrintInfo (string evt)
+         { EventLog.WriteEntry(elogSource, evt, EventLogEntryType.Information, 0x03); }
+
+      private void LoadConfigFromFile () {
          try {
             using (StreamReader file = new StreamReader(fileName)) {
                string line;
@@ -27,14 +40,17 @@ namespace CustomWatchdog {
                file.Close();
             }
          } catch (IOException) {
+            PrintError ("Problem reading config file " + fileName);
             throw new Exception("Problem reading config file " + fileName);
          }
       }
 
       private void Recover () {
          //System.Diagnostics.Process.Start(healingBatch);
+         PrintWarning("Starting recovery procedure...");
          ApplicationLoader.PROCESS_INFORMATION procInfo;
          ApplicationLoader.StartProcessAndBypassUAC(healingBatch, out procInfo);
+         PrintWarning("Recovery procedure has finished.");
       }
 
       private bool Check () {
@@ -48,6 +64,7 @@ namespace CustomWatchdog {
                }
             }
             if (!found) {
+               PrintWarning("Couldn't find the process " + procName + ".");
                return false;
             }
          }
@@ -58,7 +75,11 @@ namespace CustomWatchdog {
          while (true) {
             if (!Check()) {
                Recover();
-               Thread.Sleep(bufferTime);
+               PrintWarning("Waiting for the suite to recover...");
+               while (!Check()) {
+                  Thread.Sleep(bufferTime);
+               }
+               PrintWarning("Suite is now considered recovered!");
             } else {
                Thread.Sleep(sleepTime);
             }
@@ -66,12 +87,14 @@ namespace CustomWatchdog {
       }
 
       protected override void OnStart (string[] args) {
-         LoadFile();
+         PrintInfo("Custom batch watchdog has been started.");
+         LoadConfigFromFile();
          ThreadPool.QueueUserWorkItem(o => { RunForever(); });
-
       }
 
       public CustomBatchWatchdog () { InitializeComponent(); }
-      protected override void OnStop () { }
+      protected override void OnStop () {
+         PrintInfo("Custom batch watchdog has been signalled to stop.");
+      }
    }
 }
