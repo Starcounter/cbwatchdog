@@ -1,8 +1,10 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.ServiceProcess;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System;
+using System.Web.Script.Serialization;
+using System.Collections;
 using System.Threading;
 using Toolkit;
 
@@ -10,49 +12,70 @@ namespace CustomWatchdog {
 
    public partial class CustomBatchWatchdog : ServiceBase {
 
-      const int sleepTime = 500;    // time between consequitive checks
-      const int bufferTime = 500;   // time to let whole suite started
-      string healingBatch = "";
-      const string fileName = "watchprocs.cfg";
-      const string elogSource = "Custom Batch Watchdog";
+      // defaults (can be overriden from a config file)
+      string recoveryBatch = "WatchdogRecover.bat";
+      int healthCheckInterval = 500;
+      int recoveryPauseInterval = 500;
+      int criticalCounts = 10;
+      bool elevatedModeRecovery = false;
       List<string> procNames = new List<string>();
+      // local constants (not configurable)
+      const string configFileName = "watchprocs.cfg";
+      const string eventLogSource = "Custom Batch Watchdog";
 
+      // Windows event log handling
       private void InitEventLog () {
-         if (!EventLog.SourceExists(elogSource))
-            EventLog.CreateEventSource(elogSource, "Application");
+         if (!EventLog.SourceExists(eventLogSource))
+            EventLog.CreateEventSource(eventLogSource, "Application");
       }
-
       private void PrintWarning (string evt)
-         { EventLog.WriteEntry(elogSource, evt, EventLogEntryType.Warning, 0x01); }
+         { EventLog.WriteEntry(eventLogSource, evt, EventLogEntryType.Warning, 0x01); }
       private void PrintError (string evt)
-         { EventLog.WriteEntry(elogSource, evt, EventLogEntryType.Error, 0x02); }
+         { EventLog.WriteEntry(eventLogSource, evt, EventLogEntryType.Error, 0x02); }
       private void PrintInfo (string evt)
-         { EventLog.WriteEntry(elogSource, evt, EventLogEntryType.Information, 0x03); }
+         { EventLog.WriteEntry(eventLogSource, evt, EventLogEntryType.Information, 0x03); }
 
       private void LoadConfigFromFile () {
          try {
-            using (StreamReader file = new StreamReader(fileName)) {
-               string line;
-               healingBatch = file.ReadLine();
-               while ((line = file.ReadLine()) != null) {
-                  procNames.Add(line);
-               }
-               file.Close();
-            }
+            JavaScriptSerializer ser = new JavaScriptSerializer();
+            var dict = ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(configFileName));
+            if (!dict.ContainsKey ("processes"))
+               throw new Exception("No processes are given to watch in a config file");
+            if (dict.ContainsKey("recoveryBatch"))
+               recoveryBatch = (string) dict["recoveryBatch"];
+            if (dict.ContainsKey("healthCheckInterval"))
+               healthCheckInterval = int.Parse((string) dict["healthCheckInterval"]);
+            if (dict.ContainsKey("recoveryPauseInterval"))
+               recoveryPauseInterval = int.Parse((string)dict["recoveryPauseInterval"]);
+            if (dict.ContainsKey("criticalCounts"))
+               elevatedModeRecovery = int.Parse((string)dict["criticalCounts"]);
+            if (dict.ContainsKey("elevatedModeRecovery"))
+               elevatedModeRecovery = bool.Parse((string)dict["elevatedModeRecovery"]);
+            ArrayList procsList = (ArrayList)dict["processes"];
+            foreach (var proc in procsList)
+               procNames.Add((string)proc);
+            PrintInfo("Watchdog will be started with:\n" +
+               "   recoveryBatch : " + recoveryBatch.ToString() + "\n" +
+               "   healthCheckInterval : " + healthCheckInterval.ToString() + "\n" +
+               "   recoveryPauseInterval : " + recoveryPauseInterval.ToString() + "\n" +
+               "   elevatedModeRecovery : " + elevatedModeRecovery.ToString() + "\n" +
+               "   processes : " + string.Join("; ", procNames));
          } catch (IOException) {
-            PrintError ("Problem reading config file " + fileName);
-            throw new Exception("Problem reading config file " + fileName);
+            throw new Exception("Problem reading config file " + configFileName);
          }
       }
 
       private void Recover () {
-         //System.Diagnostics.Process.Start(healingBatch);
-         PrintWarning("Starting recovery procedure...");
-         ApplicationLoader.PROCESS_INFORMATION procInfo;
-         ApplicationLoader.StartProcessAndBypassUAC(healingBatch, out procInfo);
-         PrintWarning("Recovery procedure has finished.");
+         PrintInfo("Watchdog starts recovery procedure...");
+         if (elevatedModeRecovery) {
+            ApplicationLoader.PROCESS_INFORMATION procInfo;
+            ApplicationLoader.StartProcessAndBypassUAC(recoveryBatch, out procInfo);
+         } else {
+            System.Diagnostics.Process.Start(recoveryBatch);
+         }
+         PrintInfo("Watchdog's recovery procedure has finished.");
       }
-
+      
       private bool Check () {
          Process[] processlist = Process.GetProcesses();
          foreach (string procName in procNames) {
@@ -64,7 +87,7 @@ namespace CustomWatchdog {
                }
             }
             if (!found) {
-               PrintWarning("Couldn't find the process " + procName + ".");
+               PrintWarning("Watchdog couldn't find the process " + procName + ".");
                return false;
             }
          }
@@ -73,16 +96,23 @@ namespace CustomWatchdog {
 
       private void RunForever () {
          while (true) {
+            label:
             if (!Check()) {
                Recover();
-               PrintWarning("Waiting for the suite to recover...");
-               while (!Check()) {
-                  Thread.Sleep(bufferTime);
-               }
-               PrintWarning("Suite is now considered recovered!");
-            } else {
-               Thread.Sleep(sleepTime);
+               PrintInfo("Watchdog will now wait for the suite to recover.");
+               int cntr = 0;
+               do {
+                  PrintInfo("Watchdog's attempt #" + (cntr+1).ToString() + " to wait for recover...");
+                  Thread.Sleep(recoveryPauseInterval);
+                  cntr++;
+                  if (cntr == criticalCounts) {
+                     PrintInfo("Waited critical number of times for the suite to recover, now will repeat recovery.");
+                     goto label;
+                  }
+               } while (!Check());
+               PrintInfo("Watchdog's suite is now considered recovered!");
             }
+            Thread.Sleep(healthCheckInterval);
          }
       }
 
