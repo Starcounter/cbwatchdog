@@ -36,11 +36,11 @@ In ```cbwatchdog.json``` one must always provide a list of processes. E.g., this
 Other options are optional. Not being provided in the json file, the defaults are:
 
 ```
-      string recoveryBatch = "cbwatchdog.bat";
-      int healthCheckInterval = 500;
-      int recoveryPauseInterval = 500;
-      int criticalCounts = 10;
-      bool elevatedModeRecovery = false;
+string recoveryBatch = "cbwatchdog.bat";
+int healthCheckInterval = 500;
+int recoveryPauseInterval = 500;
+int criticalCounts = 10;
+bool elevatedModeRecovery = false;
 ```
 
 ### Uninstallation
