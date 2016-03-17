@@ -1,2 +1,2 @@
-Taskkill /F /IM notepad.exe
-notepad
+cmd /c "Taskkill /F /IM notepad.exe"
+start "" "notepad"
