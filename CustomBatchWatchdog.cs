@@ -48,7 +48,7 @@ namespace CustomWatchdog {
             if (dict.ContainsKey("recoveryPauseInterval"))
                recoveryPauseInterval = int.Parse((string)dict["recoveryPauseInterval"]);
             if (dict.ContainsKey("criticalCounts"))
-               elevatedModeRecovery = int.Parse((string)dict["criticalCounts"]);
+               criticalCounts = int.Parse((string)dict["criticalCounts"]);
             if (dict.ContainsKey("elevatedModeRecovery"))
                elevatedModeRecovery = bool.Parse((string)dict["elevatedModeRecovery"]);
             ArrayList procsList = (ArrayList)dict["processes"];
