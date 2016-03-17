@@ -1,6 +1,6 @@
 # Custom Batch Watchdog (```cbwatchdog```)
 
-The system service ```Custom Batch Watchdog``` watches a list of processes to be in-place and running, and executes a batch file if one or more are missing. Service is configured via ```cbwatchdog.json``` which must be put into ```%windir%/System32``` (which usually is ```C:/windows/system32```). The service is essentially a simple state machine. Every ```healthCheckInterval``` milliseconds it checks whether all the appplications with names from a list ```processes``` are presented. If one or more are not running at a moment of check, the service executes ```recoveryBatch```. After syncronously running ```recoveryBatch``` service starts to check at every ```recoveryPauseInterval``` milliseconds whether the whole list of apps is back again. It checks it in a loop for at most ```criticalCounts``` times, waiting ```recoveryPauseInterval``` milliseconds each time, after which it executes ```recoveryBatch``` again, and the loop repeats.
+The Windows system service ```Custom Batch Watchdog``` (```cbwatchdog```) watches a list of processes to be in-place and running, and executes a batch file if one or more are missing. Service is configured via ```cbwatchdog.json``` which must be put into ```%windir%/System32``` (which usually is ```C:/windows/system32```). The service is essentially a simple state machine. Every ```healthCheckInterval``` milliseconds it checks whether all the appplications with names from a list ```processes``` are presented. If one or more are not running at a moment of check, the service executes ```recoveryBatch```. After syncronously running ```recoveryBatch``` service starts to check at every ```recoveryPauseInterval``` milliseconds whether the whole list of apps is back again. It checks it in a loop for at most ```criticalCounts``` times, waiting ```recoveryPauseInterval``` milliseconds each time, after which it executes ```recoveryBatch``` again, and the loop repeats.
 
 ### How to set it up
 
@@ -17,3 +17,7 @@ The service is installed with ```Manual``` type of startup. In order to have the
 Now, if you restart Windows, the first thing you'll see after reboot is ```notepad```.
 
 ### Diagnostics
+
+### Uninstallation
+
+Open Admin-rights command prompt, go to your service exe location and fire ```installutil /u cbwatchdog.exe```.
