@@ -13,14 +13,14 @@ namespace CustomWatchdog {
    public partial class CustomBatchWatchdog : ServiceBase {
 
       // defaults (can be overriden from a config file)
-      string recoveryBatch = "WatchdogRecover.bat";
+      string recoveryBatch = "cbwatchdog.bat";
       int healthCheckInterval = 500;
       int recoveryPauseInterval = 500;
       int criticalCounts = 10;
       bool elevatedModeRecovery = false;
       List<string> procNames = new List<string>();
       // local constants (not configurable)
-      const string configFileName = "watchprocs.cfg";
+      const string configFileName = "cbwatchdog.json";
       const string eventLogSource = "Custom Batch Watchdog";
 
       // Windows event log handling
