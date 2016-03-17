@@ -23,9 +23,9 @@ The watchdog writes all events to a system log. Here is what you typically see v
 
 ![](./docs/Service-Start-3.png)
 
-### Elevated mode to run recovery
+### Elevated mode to run recovery script
 
-After Windows Vista system servcies can no longer start processes with GUI. In order to have watched processes with GUI, ```cbwatchdog``` is extended with a feature to run the recovery batch in an elevated (full-Admin rights) mode with all limitations supressed. To enable it set ```elevatedModeRecovery``` to ```true```.
+After Windows Vista, system servcies can no longer start processes with GUI. In order to have watched processes with GUI, ```cbwatchdog``` is extended with a feature to run the recovery batch in an elevated (full-Admin rights) mode with all limitations supressed. To enable it set ```elevatedModeRecovery``` to ```true```.
 
 ### Defaults and obligatory options
 
