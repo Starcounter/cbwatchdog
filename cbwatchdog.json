@@ -1,8 +1,10 @@
 {
-	"recoveryBatch": "WatchdogRecover.bat",
+	"recoveryBatch": "cbwatchdog.bat",
 	"healthCheckInterval": "2000",
 	"recoveryPauseInterval": "2000",
 	"elevatedModeRecovery": "true",
 	"criticalCounts": "10",
-	"processes": ["notepad"]
+	"scDatabase": "default",
+	"processes": ["notepad"],
+	"scAppNames": ["Launcher", "SignIn"]
 }
