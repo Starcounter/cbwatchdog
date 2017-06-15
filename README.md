@@ -47,6 +47,25 @@ int criticalCounts = 10;
 bool elevatedModeRecovery = false;
 ```
 
+### Defaults and obligatory options for Starcounter Applications
+
+Default value for ```scAppNames``` is an empty array. Add which starcounter apps that cbWatchdog should verify is still running in database ```scDatabase```, (default value is ```default```).
+
+```
+{
+   "scDatabase": "default",
+   "scAppNames": ["App1", "App2", "App3"]
+}
+```
+
+With this information cbWatchdog evaluates to output from ```staradmin```. If some app is not running, then the ```recoveryBatch``` is executed.
+
+```c#
+// stdOutput is output from `staradmin --database={scDatabase} list app`
+bool allAppsAreRunning = scAppNames.All(appName => stdOutput.Contains($"{appName} (in {scDatabase})"));
+```
+
+
 ### Uninstallation
 
 Open Admin-rights command prompt, go to your service exe location and fire ```installutil /u cbwatchdog.exe```. A faster way is to type: ```sc delete "Custom Batch Watchdog"```.
