@@ -25,7 +25,7 @@ namespace CustomWatchdog
         List<string> scAppNames = new List<string>();
 
         // local constants (not configurable)
-        const string configFileName = "C:\\Windows\\cbwatchdog.json";
+        const string configFileName = "cbwatchdog.json";
         const string eventLogSource = "Custom Batch Watchdog";
 
         // Windows event log handling
