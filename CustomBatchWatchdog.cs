@@ -11,18 +11,14 @@ using System.Linq;
 
 namespace CustomWatchdog
 {
-
     public partial class CustomBatchWatchdog : ServiceBase
     {
         // defaults (can be overriden from a config file)
-        string recoveryBatch = "cbwatchdog.bat";
         int healthCheckInterval = 500;
         int recoveryPauseInterval = 500;
         int criticalCounts = 10;
         bool elevatedModeRecovery = false;
-        List<string> procNames = new List<string>();
-        string scDatabase = "default";
-        List<string> scAppNames = new List<string>();
+        List<RecoveryItem> recoveryItems = new List<RecoveryItem>();
 
         // local constants (not configurable)
         const string configFileName = "cbwatchdog.json";
@@ -47,45 +43,73 @@ namespace CustomWatchdog
             {
                 JavaScriptSerializer ser = new JavaScriptSerializer();
                 var dict = ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(configFileName));
-                if (!dict.ContainsKey("processes"))
-                    throw new Exception("No processes are given to watch in a config file");
-                if (dict.ContainsKey("recoveryBatch"))
-                    recoveryBatch = (string)dict["recoveryBatch"];
+                //if (!dict.ContainsKey("processes"))
+                //{
+                //    throw new Exception("No processes are given to watch in a config file");
+                //}
+
                 if (dict.ContainsKey("healthCheckInterval"))
-                    healthCheckInterval = int.Parse((string)dict["healthCheckInterval"]);
-                if (dict.ContainsKey("recoveryPauseInterval"))
-                    recoveryPauseInterval = int.Parse((string)dict["recoveryPauseInterval"]);
-                if (dict.ContainsKey("criticalCounts"))
-                    criticalCounts = int.Parse((string)dict["criticalCounts"]);
-                if (dict.ContainsKey("elevatedModeRecovery"))
-                    elevatedModeRecovery = bool.Parse((string)dict["elevatedModeRecovery"]);
-                ArrayList procsList = (ArrayList)dict["processes"];
-                foreach (var proc in procsList)
-                    procNames.Add((string)proc);
-
-
-                if (dict.ContainsKey("scDatabase"))
                 {
-                    scDatabase = (string)dict["scDatabase"];
+                    healthCheckInterval = int.Parse((string)dict["healthCheckInterval"]);
+                }
+                if (dict.ContainsKey("recoveryPauseInterval"))
+                {
+                    recoveryPauseInterval = int.Parse((string)dict["recoveryPauseInterval"]);
+                }
+                if (dict.ContainsKey("criticalCounts"))
+                {
+                    criticalCounts = int.Parse((string)dict["criticalCounts"]);
+                }
+                if (dict.ContainsKey("elevatedModeRecovery"))
+                {
+                    elevatedModeRecovery = bool.Parse((string)dict["elevatedModeRecovery"]);
                 }
 
-                if (dict.ContainsKey("scAppNames"))
+                if (dict.ContainsKey("recoveryItems"))
                 {
-                    ArrayList appNameList = (ArrayList)dict["scAppNames"];
-                    foreach (var appName in appNameList)
+                    ArrayList recoveryItemDictList = (ArrayList)dict["recoveryItems"];
+                    foreach (Dictionary<string, object> recoveryItemDict in recoveryItemDictList)
                     {
-                        scAppNames.Add((string)appName);
+                        RecoveryItem recoveryItem = new RecoveryItem();
+
+                        if (recoveryItemDict.ContainsKey("recoveryBatch"))
+                        {
+                            recoveryItem.RecoveryBatch = (string)recoveryItemDict["recoveryBatch"];
+                        }
+                        if (recoveryItemDict.ContainsKey("scDatabase"))
+                        {
+                            recoveryItem.ScDatabase = (string)recoveryItemDict["scDatabase"];
+                        }
+
+                        if (recoveryItemDict.ContainsKey("processes"))
+                        {
+                            ArrayList procsList = (ArrayList)recoveryItemDict["processes"];
+                            foreach (var proc in procsList)
+                            {
+                                recoveryItem.Processes.Add((string)proc);
+                            }
+                        }
+                        if (recoveryItemDict.ContainsKey("scAppNames"))
+                        {
+                            ArrayList appNameList = (ArrayList)recoveryItemDict["scAppNames"];
+                            foreach (var appName in appNameList)
+                            {
+                                recoveryItem.ScAppNames.Add((string)appName);
+                            }
+                        }
+
+                        this.recoveryItems.Add(recoveryItem);
                     }
                 }
 
+                string recoveryItemsInfo = string.Join("", recoveryItems);
+
                 PrintInfo("Watchdog will be started with:\n" +
-                   "   recoveryBatch : " + recoveryBatch.ToString() + "\n" +
-                   "   healthCheckInterval : " + healthCheckInterval.ToString() + "\n" +
-                   "   recoveryPauseInterval : " + recoveryPauseInterval.ToString() + "\n" +
-                   "   elevatedModeRecovery : " + elevatedModeRecovery.ToString() + "\n" +
-                   "   processes : " + string.Join("; ", procNames) + "\n" +
-                   "   scDatabase : " + scDatabase.ToString() + "\n" +
-                   "   scAppNames : " + string.Join("; ", scAppNames)
+                   "    healthCheckInterval : " + healthCheckInterval.ToString() + "\n" +
+                   "    recoveryPauseInterval : " + recoveryPauseInterval.ToString() + "\n" +
+                   "    elevatedModeRecovery : " + elevatedModeRecovery.ToString() + "\n" +
+                   "    criticalCounts : " + criticalCounts.ToString() + "\n" +
+                   recoveryItemsInfo
                    );
             }
             catch (IOException)
@@ -94,25 +118,27 @@ namespace CustomWatchdog
             }
         }
 
-        private void Recover()
+        private void Recover(RecoveryItem rc)
         {
             PrintInfo("Watchdog starts recovery procedure...");
             if (elevatedModeRecovery)
             {
                 ApplicationLoader.PROCESS_INFORMATION procInfo;
-                ApplicationLoader.StartProcessAndBypassUAC(recoveryBatch, out procInfo);
+                ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, out procInfo);
+
+                FileInfo fi = new FileInfo(rc.RecoveryBatch);
             }
             else
             {
-                System.Diagnostics.Process.Start(recoveryBatch);
+                System.Diagnostics.Process.Start(rc.RecoveryBatch);
             }
             PrintInfo("Watchdog's recovery procedure has finished.");
         }
 
-        private bool Check()
+        private bool Check(RecoveryItem rc)
         {
             Process[] processlist = Process.GetProcesses();
-            foreach (string procName in procNames)
+            foreach (string procName in rc.Processes)
             {
                 bool found = false;
                 foreach (Process theprocess in processlist)
@@ -129,16 +155,16 @@ namespace CustomWatchdog
                     return false;
                 }
             }
-
-            return CheckStarcounterApps();
+            
+            return CheckStarcounterApps(rc);
         }
 
-        private bool CheckStarcounterApps()
+        private bool CheckStarcounterApps(RecoveryItem rc)
         {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-            startInfo.FileName = "C:\\Program Files\\Starcounter\\staradmin.exe";
-            startInfo.Arguments = $"--database={this.scDatabase} list app";
+            startInfo.FileName = "staradmin.exe";
+            startInfo.Arguments = $"--database={rc.ScDatabase} list app";
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
             startInfo.CreateNoWindow = true;
@@ -147,7 +173,7 @@ namespace CustomWatchdog
 
             string stdOutput = process.StandardOutput.ReadToEnd();
 
-            bool allAppsAreRunning = this.scAppNames.All(appName => stdOutput.Contains($"{appName} (in {this.scDatabase})"));
+            bool allAppsAreRunning = rc.ScAppNames.All(appName => stdOutput.Contains($"{appName} (in {rc.ScDatabase})"));
 
             return allAppsAreRunning;
         }
@@ -157,23 +183,26 @@ namespace CustomWatchdog
             while (true)
             {
             label:
-                if (!Check())
+                foreach (RecoveryItem rc in recoveryItems)
                 {
-                    Recover();
-                    PrintInfo("Watchdog will now wait for the suite to recover.");
-                    int cntr = 0;
-                    do
+                    if (!Check(rc))
                     {
-                        PrintInfo("Watchdog's attempt #" + (cntr + 1).ToString() + " to wait for recover...");
-                        Thread.Sleep(recoveryPauseInterval);
-                        cntr++;
-                        if (cntr == criticalCounts)
+                        Recover(rc);
+                        PrintInfo("Watchdog will now wait for the suite to recover.");
+                        int cntr = 0;
+                        do
                         {
-                            PrintInfo("Waited critical number of times for the suite to recover, now will repeat recovery.");
-                            goto label;
-                        }
-                    } while (!Check());
-                    PrintInfo("Watchdog's suite is now considered recovered!");
+                            PrintInfo("Watchdog's attempt #" + (cntr + 1).ToString() + " to wait for recover...");
+                            Thread.Sleep(recoveryPauseInterval);
+                            cntr++;
+                            if (cntr == criticalCounts)
+                            {
+                                PrintInfo("Waited critical number of times for the suite to recover, now will repeat recovery.");
+                                goto label;
+                            }
+                        } while (!Check(rc));
+                        PrintInfo("Watchdog's suite is now considered recovered!");
+                    }
                 }
                 Thread.Sleep(healthCheckInterval);
             }

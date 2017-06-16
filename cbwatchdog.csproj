@@ -54,6 +54,7 @@
     <Compile Include="CustomBatchWatchdog.Designer.cs">
       <DependentUpon>CustomBatchWatchdog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Model\RecoveryItem.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProjectInstaller.cs">
       <SubType>Component</SubType>
