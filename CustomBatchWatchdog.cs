@@ -43,10 +43,6 @@ namespace CustomWatchdog
             {
                 JavaScriptSerializer ser = new JavaScriptSerializer();
                 var dict = ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(configFileName));
-                //if (!dict.ContainsKey("processes"))
-                //{
-                //    throw new Exception("No processes are given to watch in a config file");
-                //}
 
                 if (dict.ContainsKey("healthCheckInterval"))
                 {
@@ -112,9 +108,9 @@ namespace CustomWatchdog
                    recoveryItemsInfo
                    );
             }
-            catch (IOException)
+            catch (IOException e)
             {
-                throw new Exception("Problem reading config file " + configFileName);
+                throw new Exception("Invalid format on: " + configFileName, e);
             }
         }
 
@@ -125,8 +121,6 @@ namespace CustomWatchdog
             {
                 ApplicationLoader.PROCESS_INFORMATION procInfo;
                 ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, out procInfo);
-
-                FileInfo fi = new FileInfo(rc.RecoveryBatch);
             }
             else
             {
