@@ -116,7 +116,7 @@ namespace CustomWatchdog
 
         private void Recover(RecoveryItem rc)
         {
-            PrintInfo("Watchdog starts recovery procedure...");
+            PrintInfo("Watchdog starts recovery procedure. Start executing file: " + rc.RecoveryBatch);
             if (elevatedModeRecovery)
             {
                 ApplicationLoader.PROCESS_INFORMATION procInfo;
@@ -126,7 +126,7 @@ namespace CustomWatchdog
             {
                 System.Diagnostics.Process.Start(rc.RecoveryBatch);
             }
-            PrintInfo("Watchdog's recovery procedure has finished.");
+            PrintInfo("Watchdog's recovery procedure has finished. Finished executing file: " + rc.RecoveryBatch);
         }
 
         private bool Check(RecoveryItem rc)
