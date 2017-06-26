@@ -87,6 +87,11 @@ namespace Toolkit
         public const int HIGH_PRIORITY_CLASS = 0x80;
         public const int REALTIME_PRIORITY_CLASS = 0x100;
 
+        public const UInt32 INFINITE = 0xFFFFFFFF;
+        public const UInt32 WAIT_ABANDONED = 0x00000080;
+        public const UInt32 WAIT_OBJECT_0 = 0x00000000;
+        public const UInt32 WAIT_TIMEOUT = 0x00000102;
+
         #endregion
 
         #region Win32 API Imports
@@ -113,8 +118,15 @@ namespace Toolkit
         [DllImport("kernel32.dll")]
         static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
 
+        [DllImport("kernel32.dll")]
+        static extern UInt32 WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
+
         [DllImport("advapi32", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
         static extern bool OpenProcessToken(IntPtr ProcessHandle, int DesiredAccess, ref IntPtr TokenHandle);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
 
         #endregion
 
@@ -124,7 +136,7 @@ namespace Toolkit
         /// <param name="applicationName">The name of the application to launch</param>
         /// <param name="procInfo">Process information regarding the launched application that gets returned to the caller</param>
         /// <returns></returns>
-        public static bool StartProcessAndBypassUAC(String applicationName, bool noConsole, out PROCESS_INFORMATION procInfo)
+        public static bool StartProcessAndBypassUAC(String applicationName, bool noConsole, uint recoveryExecutionTimeout, Action<string> PrintInfo, out PROCESS_INFORMATION procInfo)
         {
             uint winlogonPid = 0;
             IntPtr hUserTokenDup = IntPtr.Zero, hPToken = IntPtr.Zero, hProcess = IntPtr.Zero;
@@ -201,6 +213,24 @@ namespace Toolkit
                                             ref si,                 // pointer to STARTUPINFO structure
                                             out procInfo            // receives information about new process
                                             );
+
+            // check if CreateProcessAsUser call is completed withing recoveryExecutionTimeout
+            if (WaitForSingleObject(procInfo.hProcess, recoveryExecutionTimeout) == WAIT_OBJECT_0)
+            {
+                // CreateProcessAsUser execution passed within recoveryExecutionTimeout, DO NOTHING
+            }
+            else
+            {
+                PrintInfo($"Recovery execution within execution timeout \"recoveryExecutionTimeout={recoveryExecutionTimeout.ToString()}\" for file {applicationName} FAILED");
+                if (TerminateProcess(procInfo.hProcess, 1) == true)
+                {
+                    PrintInfo($"Terminate of {applicationName} execution SUCCESS");
+                }
+                else
+                {
+                    PrintInfo($"Terminate of {applicationName} execution FAILED");
+                }
+            }
 
             // invalidate the handles
             CloseHandle(hProcess);
