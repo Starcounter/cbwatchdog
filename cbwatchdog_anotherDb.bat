@@ -1,3 +1,3 @@
-pushd "C:\GitHub\Palma"
+pushd "C:\GitHub"
 call anotherDb.bat
 popd

@@ -124,6 +124,10 @@ namespace Toolkit
         [DllImport("advapi32", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
         static extern bool OpenProcessToken(IntPtr ProcessHandle, int DesiredAccess, ref IntPtr TokenHandle);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
+
         #endregion
 
         /// <summary>
@@ -132,7 +136,7 @@ namespace Toolkit
         /// <param name="applicationName">The name of the application to launch</param>
         /// <param name="procInfo">Process information regarding the launched application that gets returned to the caller</param>
         /// <returns></returns>
-        public static bool StartProcessAndBypassUAC(String applicationName, bool noConsole, Action<string> PrintInfo, out PROCESS_INFORMATION procInfo)
+        public static bool StartProcessAndBypassUAC(String applicationName, bool noConsole, uint recoveryExecutionTimeout, Action<string> PrintInfo, out PROCESS_INFORMATION procInfo)
         {
             uint winlogonPid = 0;
             IntPtr hUserTokenDup = IntPtr.Zero, hPToken = IntPtr.Zero, hProcess = IntPtr.Zero;
@@ -210,14 +214,22 @@ namespace Toolkit
                                             out procInfo            // receives information about new process
                                             );
 
-            PrintInfo("CreateProcessAsUser has been executed");
-            if (WaitForSingleObject(procInfo.hProcess, INFINITE) == WAIT_OBJECT_0)
+            // check if CreateProcessAsUser call is completed withing recoveryExecutionTimeout
+            if (WaitForSingleObject(procInfo.hProcess, recoveryExecutionTimeout) == WAIT_OBJECT_0)
             {
-                PrintInfo("CreateProcessAsUser PASSED");
+                // CreateProcessAsUser execution passed within recoveryExecutionTimeout, DO NOTHING
             }
             else
             {
-                PrintInfo("CreateProcessAsUser FAILED");
+                PrintInfo($"Recovery execution within execution timeout \"recoveryExecutionTimeout={recoveryExecutionTimeout.ToString()}\" for file {applicationName} FAILED");
+                if (TerminateProcess(procInfo.hProcess, 1) == true)
+                {
+                    PrintInfo($"Terminate of {applicationName} execution SUCCESS");
+                }
+                else
+                {
+                    PrintInfo($"Terminate of {applicationName} execution FAILED");
+                }
             }
 
             // invalidate the handles

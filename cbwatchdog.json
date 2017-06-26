@@ -1,21 +1,20 @@
 {
-  "healthCheckInterval": "2000",
-  "recoveryPauseInterval": "2000",
-  "elevatedModeRecovery": "true",
+  "healthCheckInterval": "10000",
+  "recoveryExecutionTimeout": "300000",
   "noConsoleForRecoveryScript": "false",
   "criticalCounts": "10",
   "recoveryItems": [
     {
       "recoveryBatch": "cbwatchdog_defaultDb.bat",
-      "scDatabase": "default",
-      "processes": ["notepad"],
-      "scAppNames": ["Launcher", "SignIn"]
+      "scDatabase": "ScDatabase1",
+      "processes": ["scdata"],
+      "scAppNames": ["ScApp10", "ScApp11"]
     },
     {
       "recoveryBatch": "cbwatchdog_anotherDb.bat",
-      "scDatabase": "another",
-      "processes": ["notepad"],
-      "scAppNames": ["GPS", "MatrixTool"]
+      "scDatabase": "ScDatabase2",
+      "processes": ["scdata"],
+      "scAppNames": ["ScApp20", "ScApp21"]
     }
   ]
 }

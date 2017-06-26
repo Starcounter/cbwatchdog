@@ -33,9 +33,8 @@ The full structure of ```cbwatchdog.json``` is as following:
 
 ```
 {
-  "healthCheckInterval": "500",
-  "recoveryPauseInterval": "500",
-  "elevatedModeRecovery": "true",
+  "healthCheckInterval": "10000",
+  "recoveryExecutionTimeout": "300000",
   "noConsoleForRecoveryScript": "false",
   "criticalCounts": "10",
   "recoveryItems": [
@@ -52,10 +51,9 @@ The full structure of ```cbwatchdog.json``` is as following:
 where some properties are optional and are provided with the following default values:
 
 ```
-int healthCheckInterval = 500; // number of milliseconds waiting between each check
-int recoveryPauseInterval = 500; //number of milliseconds waiting after recoveryBatch has been executed.
+int healthCheckInterval = 10000; // number of milliseconds waiting between each check
+int recoveryExecutionTimeout = 300000; // number of milliseconds before recoveryBatch is timeed out
 int criticalCounts = 10; // number of times recoveryBatch may be executed in a row
-bool elevatedModeRecovery = true;
 bool noConsoleForRecoveryScript = false; // true: Show console for recoveryBatch, false: Do not show console for recoveryBatch
 ```
 

@@ -14,10 +14,9 @@ namespace CustomWatchdog
     public partial class CustomBatchWatchdog : ServiceBase
     {
         // defaults (can be overriden from a config file)
-        int healthCheckInterval = 500;
-        int recoveryPauseInterval = 500;
+        int healthCheckInterval = 10000;
+        uint recoveryExecutionTimeout = 60000 * 5;
         int criticalCounts = 10;
-        bool elevatedModeRecovery = true;
         bool noConsoleForRecoveryScript = false;
         List<RecoveryItem> recoveryItems = new List<RecoveryItem>();
 
@@ -49,17 +48,13 @@ namespace CustomWatchdog
                 {
                     healthCheckInterval = int.Parse((string)dict["healthCheckInterval"]);
                 }
-                if (dict.ContainsKey("recoveryPauseInterval"))
+                if (dict.ContainsKey("recoveryExecutionTimeout"))
                 {
-                    recoveryPauseInterval = int.Parse((string)dict["recoveryPauseInterval"]);
+                    recoveryExecutionTimeout = uint.Parse((string)dict["recoveryExecutionTimeout"]);
                 }
                 if (dict.ContainsKey("criticalCounts"))
                 {
                     criticalCounts = int.Parse((string)dict["criticalCounts"]);
-                }
-                if (dict.ContainsKey("elevatedModeRecovery"))
-                {
-                    elevatedModeRecovery = bool.Parse((string)dict["elevatedModeRecovery"]);
                 }
                 if (dict.ContainsKey("noConsoleForRecoveryScript"))
                 {
@@ -107,8 +102,8 @@ namespace CustomWatchdog
 
                 PrintInfo("Watchdog will be started with:\n" +
                    "    healthCheckInterval : " + healthCheckInterval.ToString() + "\n" +
-                   "    recoveryPauseInterval : " + recoveryPauseInterval.ToString() + "\n" +
-                   "    elevatedModeRecovery : " + elevatedModeRecovery.ToString() + "\n" +
+                   "    recoveryExecutionTimeout : " + recoveryExecutionTimeout.ToString() + "\n" +
+                   "    noConsoleForRecoveryScript : " + noConsoleForRecoveryScript.ToString() + "\n" + 
                    "    criticalCounts : " + criticalCounts.ToString() + "\n" +
                    recoveryItemsInfo
                    );
@@ -121,26 +116,8 @@ namespace CustomWatchdog
 
         private void Recover(RecoveryItem rc)
         {
-            PrintInfo("Watchdog starts recovery procedure. Start executing file: " + rc.RecoveryBatch);
-            if (elevatedModeRecovery)
-            {
-                ApplicationLoader.PROCESS_INFORMATION procInfo;
-                ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, noConsoleForRecoveryScript, PrintInfo, out procInfo);
-            }
-            else
-            {
-                System.Diagnostics.Process process = new System.Diagnostics.Process();
-                System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-                startInfo.FileName = rc.RecoveryBatch;
-                startInfo.UseShellExecute = false;
-                startInfo.CreateNoWindow = noConsoleForRecoveryScript;
-                process.StartInfo = startInfo;
-                process.Start();
-                process.WaitForExit();
-
-                //System.Diagnostics.Process.Start(rc.RecoveryBatch).WaitForExit();
-            }
-            PrintInfo("Watchdog's recovery procedure has finished. Finished executing file: " + rc.RecoveryBatch);
+            ApplicationLoader.PROCESS_INFORMATION procInfo;
+            ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, noConsoleForRecoveryScript, recoveryExecutionTimeout, PrintInfo, out procInfo);
         }
 
         private bool Check(RecoveryItem rc)
@@ -190,26 +167,40 @@ namespace CustomWatchdog
         {
             while (true)
             {
-            label:
                 foreach (RecoveryItem rc in recoveryItems)
                 {
-                    if (!Check(rc))
-                    {
-                        Recover(rc);
-                        PrintInfo("Watchdog will now wait for the suite to recover.");
-                        int cntr = 0;
+                    bool check = Check(rc);
+                    int cntr = 0;
+
+                    if (check == false)
+                    {    
                         do
                         {
-                            PrintInfo("Watchdog's attempt #" + (cntr + 1).ToString() + " to wait for recover...");
-                            Thread.Sleep(recoveryPauseInterval);
                             cntr++;
+
                             if (cntr == criticalCounts)
                             {
-                                PrintInfo("Waited critical number of times for the suite to recover, now will repeat recovery.");
-                                goto label;
+                                // maximum number of recovery attemps has been succeeded, abort
+                                PrintInfo($"{(criticalCounts - 1).ToString()} recovery attemps for {rc.RecoveryBatch} file has been made, aborting further attemps and moving on with next revoceryItem");
+                                break;
                             }
-                        } while (!Check(rc));
-                        PrintInfo("Watchdog's suite is now considered recovered!");
+                            else
+                            {
+                                // execute recovery
+                                PrintInfo("Watchdog's recovery attempt #" + (cntr).ToString() + " procedure started: " + rc.RecoveryBatch);
+                                Recover(rc);
+                            }
+
+                            check = Check(rc);
+                            if (check == true)
+                            {
+                                PrintInfo("Watchdog's recovery attempt #" + (cntr).ToString() + " SUCCESS: " + rc.RecoveryBatch);
+                            }
+                            else
+                            {
+                                PrintInfo("Watchdog's recovery attempt #" + (cntr).ToString() + " FAILED: " + rc.RecoveryBatch);
+                            }
+                        } while (check == false);
                     }
                 }
                 Thread.Sleep(healthCheckInterval);
