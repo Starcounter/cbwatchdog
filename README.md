@@ -29,22 +29,43 @@ After Windows Vista, system servcies can no longer start processes with GUI. In 
 
 ### Defaults and obligatory options
 
-In ```cbwatchdog.json``` one must always provide a list of processes to watch. E.g., this is the minimal possible ```cbwatchdog.json```:
+The full structure of ```cbwatchdog.json``` is as following:
 
 ```
 {
-   "processes": ["notepad"]
+  "healthCheckInterval": "500",
+  "recoveryPauseInterval": "500",
+  "elevatedModeRecovery": "true",
+  "criticalCounts": "10",
+  "recoveryItems": [
+    {
+      "recoveryBatch": "cbwatchdog.bat",
+      "scDatabase": "default",
+      "processes": ["ProcessName"],
+      "scAppNames": ["ApplicationName"]
+    }
+  ]
 }
 ```
 
-Other options are optional. Not being provided in the json file, the defaults are:
+where some properties are optional and are provided with the following default values:
 
 ```
-string recoveryBatch = "cbwatchdog.bat";
 int healthCheckInterval = 500;
 int recoveryPauseInterval = 500;
 int criticalCounts = 10;
 bool elevatedModeRecovery = false;
+```
+
+```recoveryItems``` is an array in order to be able to monitor several different Starcounter databases and have unique ```recoveryBatch``` files. If any of the following are not running, then ```recoveryBatch``` will be executed.
+* ```processes```: Observing if these processes are running
+* ```scAppNames```: Observing if these apps are running in the target ```"scDatabase"``` Starcounter database
+
+The array ```scAppNames``` of Starcounter applications are evaluated by parsing the output from ```staradmin.exe```:
+
+```c#
+// stdOutput is output from `staradmin --database={scDatabase} list app`
+bool allAppsAreRunning = scAppNames.All(appName => stdOutput.Contains($"{appName} (in {scDatabase})"));
 ```
 
 ### Uninstallation

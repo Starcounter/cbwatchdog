@@ -1,8 +1,20 @@
 {
-	"recoveryBatch": "WatchdogRecover.bat",
-	"healthCheckInterval": "2000",
-	"recoveryPauseInterval": "2000",
-	"elevatedModeRecovery": "true",
-	"criticalCounts": "10",
-	"processes": ["notepad"]
+  "healthCheckInterval": "2000",
+  "recoveryPauseInterval": "2000",
+  "elevatedModeRecovery": "true",
+  "criticalCounts": "10",
+  "recoveryItems": [
+    {
+      "recoveryBatch": "cbwatchdog_defaultDb.bat",
+      "scDatabase": "default",
+      "processes": ["notepad"],
+      "scAppNames": ["Launcher", "SignIn"]
+    },
+    {
+      "recoveryBatch": "cbwatchdog_anotherDb.bat",
+      "scDatabase": "another",
+      "processes": ["notepad"],
+      "scAppNames": ["GPS", "MatrixTool"]
+    }
+  ]
 }
