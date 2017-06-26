@@ -2,6 +2,7 @@
   "healthCheckInterval": "2000",
   "recoveryPauseInterval": "2000",
   "elevatedModeRecovery": "true",
+  "noConsoleForRecoveryScript": "false",
   "criticalCounts": "10",
   "recoveryItems": [
     {

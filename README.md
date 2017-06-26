@@ -36,6 +36,7 @@ The full structure of ```cbwatchdog.json``` is as following:
   "healthCheckInterval": "500",
   "recoveryPauseInterval": "500",
   "elevatedModeRecovery": "true",
+  "noConsoleForRecoveryScript": "false",
   "criticalCounts": "10",
   "recoveryItems": [
     {
@@ -51,10 +52,11 @@ The full structure of ```cbwatchdog.json``` is as following:
 where some properties are optional and are provided with the following default values:
 
 ```
-int healthCheckInterval = 500;
-int recoveryPauseInterval = 500;
-int criticalCounts = 10;
-bool elevatedModeRecovery = false;
+int healthCheckInterval = 500; // number of milliseconds waiting between each check
+int recoveryPauseInterval = 500; //number of milliseconds waiting after recoveryBatch has been executed.
+int criticalCounts = 10; // number of times recoveryBatch may be executed in a row
+bool elevatedModeRecovery = true;
+bool noConsoleForRecoveryScript = false; // true: Show console for recoveryBatch, false: Do not show console for recoveryBatch
 ```
 
 ```recoveryItems``` is an array in order to be able to monitor several different Starcounter databases and have unique ```recoveryBatch``` files. If any of the following are not running, then ```recoveryBatch``` will be executed.

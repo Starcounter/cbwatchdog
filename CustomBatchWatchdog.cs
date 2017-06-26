@@ -17,7 +17,8 @@ namespace CustomWatchdog
         int healthCheckInterval = 500;
         int recoveryPauseInterval = 500;
         int criticalCounts = 10;
-        bool elevatedModeRecovery = false;
+        bool elevatedModeRecovery = true;
+        bool noConsoleForRecoveryScript = false;
         List<RecoveryItem> recoveryItems = new List<RecoveryItem>();
 
         // local constants (not configurable)
@@ -59,6 +60,10 @@ namespace CustomWatchdog
                 if (dict.ContainsKey("elevatedModeRecovery"))
                 {
                     elevatedModeRecovery = bool.Parse((string)dict["elevatedModeRecovery"]);
+                }
+                if (dict.ContainsKey("noConsoleForRecoveryScript"))
+                {
+                    noConsoleForRecoveryScript = bool.Parse((string)dict["noConsoleForRecoveryScript"]);
                 }
 
                 if (dict.ContainsKey("recoveryItems"))
@@ -120,11 +125,20 @@ namespace CustomWatchdog
             if (elevatedModeRecovery)
             {
                 ApplicationLoader.PROCESS_INFORMATION procInfo;
-                ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, out procInfo);
+                ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, noConsoleForRecoveryScript, out procInfo);
             }
             else
             {
-                System.Diagnostics.Process.Start(rc.RecoveryBatch);
+                System.Diagnostics.Process process = new System.Diagnostics.Process();
+                System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+                startInfo.FileName = rc.RecoveryBatch;
+                startInfo.UseShellExecute = false;
+                startInfo.CreateNoWindow = noConsoleForRecoveryScript;
+                process.StartInfo = startInfo;
+                process.Start();
+                process.WaitForExit();
+
+                //System.Diagnostics.Process.Start(rc.RecoveryBatch).WaitForExit();
             }
             PrintInfo("Watchdog's recovery procedure has finished. Finished executing file: " + rc.RecoveryBatch);
         }
