@@ -31,7 +31,7 @@ After Windows Vista, system servcies can no longer start processes with GUI. In 
 
 The full structure of ```cbwatchdog.json``` is as following:
 
-```
+```json
 {
   "healthCheckInterval": "10000",
   "recoveryExecutionTimeout": "300000",
@@ -50,7 +50,7 @@ The full structure of ```cbwatchdog.json``` is as following:
 
 where some properties are optional and are provided with the following default values:
 
-```
+```csharp
 int healthCheckInterval = 10000; // number of milliseconds waiting between each check
 int recoveryExecutionTimeout = 300000; // number of milliseconds before recoveryBatch is timeed out
 int criticalCounts = 10; // number of times recoveryBatch may be executed in a row
@@ -63,7 +63,7 @@ bool noConsoleForRecoveryScript = false; // true: Show console for recoveryBatch
 
 The array ```scAppNames``` of Starcounter applications are evaluated by parsing the output from ```staradmin.exe```:
 
-```c#
+```csharp
 // stdOutput is output from `staradmin --database={scDatabase} list app`
 bool allAppsAreRunning = scAppNames.All(appName => stdOutput.Contains($"{appName} (in {scDatabase})"));
 ```
