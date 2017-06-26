@@ -125,7 +125,7 @@ namespace CustomWatchdog
             if (elevatedModeRecovery)
             {
                 ApplicationLoader.PROCESS_INFORMATION procInfo;
-                ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, noConsoleForRecoveryScript, out procInfo);
+                ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, noConsoleForRecoveryScript, PrintInfo, out procInfo);
             }
             else
             {

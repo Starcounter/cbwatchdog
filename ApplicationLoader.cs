@@ -87,6 +87,11 @@ namespace Toolkit
         public const int HIGH_PRIORITY_CLASS = 0x80;
         public const int REALTIME_PRIORITY_CLASS = 0x100;
 
+        public const UInt32 INFINITE = 0xFFFFFFFF;
+        public const UInt32 WAIT_ABANDONED = 0x00000080;
+        public const UInt32 WAIT_OBJECT_0 = 0x00000000;
+        public const UInt32 WAIT_TIMEOUT = 0x00000102;
+
         #endregion
 
         #region Win32 API Imports
@@ -113,6 +118,9 @@ namespace Toolkit
         [DllImport("kernel32.dll")]
         static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
 
+        [DllImport("kernel32.dll")]
+        static extern UInt32 WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
+
         [DllImport("advapi32", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
         static extern bool OpenProcessToken(IntPtr ProcessHandle, int DesiredAccess, ref IntPtr TokenHandle);
 
@@ -124,7 +132,7 @@ namespace Toolkit
         /// <param name="applicationName">The name of the application to launch</param>
         /// <param name="procInfo">Process information regarding the launched application that gets returned to the caller</param>
         /// <returns></returns>
-        public static bool StartProcessAndBypassUAC(String applicationName, bool noConsole, out PROCESS_INFORMATION procInfo)
+        public static bool StartProcessAndBypassUAC(String applicationName, bool noConsole, Action<string> PrintInfo, out PROCESS_INFORMATION procInfo)
         {
             uint winlogonPid = 0;
             IntPtr hUserTokenDup = IntPtr.Zero, hPToken = IntPtr.Zero, hProcess = IntPtr.Zero;
@@ -201,6 +209,16 @@ namespace Toolkit
                                             ref si,                 // pointer to STARTUPINFO structure
                                             out procInfo            // receives information about new process
                                             );
+
+            PrintInfo("CreateProcessAsUser has been executed");
+            if (WaitForSingleObject(procInfo.hProcess, INFINITE) == WAIT_OBJECT_0)
+            {
+                PrintInfo("CreateProcessAsUser PASSED");
+            }
+            else
+            {
+                PrintInfo("CreateProcessAsUser FAILED");
+            }
 
             // invalidate the handles
             CloseHandle(hProcess);
