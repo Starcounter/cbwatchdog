@@ -21,8 +21,8 @@ namespace CustomWatchdog
         List<RecoveryItem> recoveryItems = new List<RecoveryItem>();
 
         // local constants (not configurable)
-        const string configFileName = "cbwatchdog.json";
-        const string eventLogSource = "Custom Batch Watchdog";
+        string configFileName = "cbwatchdog.json";
+        string eventLogSource = "Custom Batch Watchdog";
 
         // Windows event log handling
         private void InitEventLog()
@@ -42,6 +42,9 @@ namespace CustomWatchdog
             try
             {
                 JavaScriptSerializer ser = new JavaScriptSerializer();
+
+                PrintInfo("Reading Configuration File :" + configFileName);
+
                 var dict = ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(configFileName));
 
                 if (dict.ContainsKey("healthCheckInterval"))
@@ -75,7 +78,7 @@ namespace CustomWatchdog
 
                         if (recoveryItemDict.ContainsKey("overrideRecoveryExecutionTimeout"))
                         {
-                            recoveryItem.overrideRecoveryExecutionTimeout = (uint)recoveryItemDict["overrideRecoveryExecutionTimeout"];
+                            recoveryItem.overrideRecoveryExecutionTimeout = uint.Parse((string)recoveryItemDict["overrideRecoveryExecutionTimeout"]);
                         }
 
                         if (recoveryItemDict.ContainsKey("scDatabase"))
@@ -215,12 +218,35 @@ namespace CustomWatchdog
             }
         }
 
+
+
         protected override void OnStart(string[] args)
         {
             //System.Diagnostics.Debugger.Launch();
             PrintInfo("Custom batch watchdog has been started.");
+
+            if (args.Length > 0)
+            {
+                OverrideSettings(args);
+            }
+
             LoadConfigFromFile();
             ThreadPool.QueueUserWorkItem(o => { RunForever(); });
+        }
+        private void OverrideSettings(string[] args)
+        {
+            if (args.Length > 0)
+            {
+                configFileName = args[0];
+                if (configFileName.IndexOf('/') > -1)
+                    configFileName = configFileName.Replace("/", string.Empty);
+                PrintInfo("Config file updated to: " + configFileName);
+            }
+            if (args.Length > 1)
+            {
+                eventLogSource = args[1];
+                PrintInfo("Event Source Name updated to: " + eventLogSource);
+            }
         }
 
         public CustomBatchWatchdog() { InitializeComponent(); }

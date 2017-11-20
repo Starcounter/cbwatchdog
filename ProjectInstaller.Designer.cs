@@ -23,26 +23,26 @@
       /// the contents of this method with the code editor.
       /// </summary>
       private void InitializeComponent () {
-         this.serviceProcessInstaller = new System.ServiceProcess.ServiceProcessInstaller();
-         this.CustomBatchWatchdog = new System.ServiceProcess.ServiceInstaller();
-         // 
-         // serviceProcessInstaller
-         // 
-         this.serviceProcessInstaller.Account = System.ServiceProcess.ServiceAccount.LocalSystem;
-         this.serviceProcessInstaller.Password = null;
-         this.serviceProcessInstaller.Username = null;
-         this.serviceProcessInstaller.AfterInstall += new System.Configuration.Install.InstallEventHandler(this.serviceProcessInstaller1_AfterInstall);
-         // 
-         // CustomBatchWatchdog
-         // 
-         this.CustomBatchWatchdog.Description = "Watches a set of given apps and runs the batch file if one is suddenly missing";
-         this.CustomBatchWatchdog.DisplayName = "Custom Batch Watchdog";
-         this.CustomBatchWatchdog.ServiceName = "Custom Batch Watchdog";
-         this.CustomBatchWatchdog.AfterInstall += new System.Configuration.Install.InstallEventHandler(this.serviceInstaller1_AfterInstall);
-         // 
-         // ProjectInstaller
-         // 
-         this.Installers.AddRange(new System.Configuration.Install.Installer[] {
+            this.serviceProcessInstaller = new System.ServiceProcess.ServiceProcessInstaller();
+            this.CustomBatchWatchdog = new System.ServiceProcess.ServiceInstaller();
+            // 
+            // serviceProcessInstaller
+            // 
+            this.serviceProcessInstaller.Account = System.ServiceProcess.ServiceAccount.LocalSystem;
+            this.serviceProcessInstaller.Password = null;
+            this.serviceProcessInstaller.Username = null;
+            this.serviceProcessInstaller.AfterInstall += new System.Configuration.Install.InstallEventHandler(this.serviceProcessInstaller1_AfterInstall);
+            // 
+            // CustomBatchWatchdog
+            // 
+            this.CustomBatchWatchdog.Description = "Watches a set of given apps and runs the batch file if one is suddenly missing";
+            this.CustomBatchWatchdog.DisplayName = "Custom Batch Watchdog";
+            this.CustomBatchWatchdog.ServiceName = "CustomBatchWatchdog";
+            this.CustomBatchWatchdog.AfterInstall += new System.Configuration.Install.InstallEventHandler(this.serviceInstaller1_AfterInstall);
+            // 
+            // ProjectInstaller
+            // 
+            this.Installers.AddRange(new System.Configuration.Install.Installer[] {
             this.serviceProcessInstaller,
             this.CustomBatchWatchdog});
 
