@@ -9,6 +9,7 @@ namespace CustomWatchdog
     internal class RecoveryItem
     {
         public string RecoveryBatch { get; set; }
+        public uint overrideRecoveryExecutionTimeout { get; set; }
         public string ScDatabase { get; set; }
         public List<string> Processes { get; set; } = new List<string>();
         public List<string> ScAppNames { get; set; } = new List<string>();

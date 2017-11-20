@@ -72,6 +72,12 @@ namespace CustomWatchdog
                         {
                             recoveryItem.RecoveryBatch = (string)recoveryItemDict["recoveryBatch"];
                         }
+
+                        if (recoveryItemDict.ContainsKey("overrideRecoveryExecutionTimeout"))
+                        {
+                            recoveryItem.overrideRecoveryExecutionTimeout = (uint)recoveryItemDict["overrideRecoveryExecutionTimeout"];
+                        }
+
                         if (recoveryItemDict.ContainsKey("scDatabase"))
                         {
                             recoveryItem.ScDatabase = (string)recoveryItemDict["scDatabase"];
@@ -117,6 +123,8 @@ namespace CustomWatchdog
         private void Recover(RecoveryItem rc)
         {
             ApplicationLoader.PROCESS_INFORMATION procInfo;
+            if (rc.overrideRecoveryExecutionTimeout != 0)
+                recoveryExecutionTimeout = rc.overrideRecoveryExecutionTimeout;
             ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, noConsoleForRecoveryScript, recoveryExecutionTimeout, PrintInfo, out procInfo);
         }
 
