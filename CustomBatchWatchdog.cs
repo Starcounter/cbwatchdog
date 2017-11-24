@@ -20,7 +20,7 @@ namespace CustomWatchdog
         private bool noConsoleForRecoveryScript = false;
         private List<RecoveryItem> recoveryItems = new List<RecoveryItem>();
 
-       
+
         private string configFileName = "cbwatchdog.json";
         private string eventLogSource = "Custom Batch Watchdog";
 
@@ -79,6 +79,11 @@ namespace CustomWatchdog
                         if (recoveryItemDict.ContainsKey("overrideRecoveryExecutionTimeout"))
                         {
                             recoveryItem.OverrideRecoveryExecutionTimeout = uint.Parse((string)recoveryItemDict["overrideRecoveryExecutionTimeout"]);
+                        }
+
+                        if (recoveryItemDict.ContainsKey("starcounterBinDirectory"))
+                        {
+                            recoveryItem.StarcounterBinDirectory = (string)recoveryItemDict["starcounterBinDirectory"];
                         }
 
                         if (recoveryItemDict.ContainsKey("scDatabase"))
@@ -159,9 +164,10 @@ namespace CustomWatchdog
 
         private bool CheckStarcounterApps(RecoveryItem rc)
         {
+            var scFileName = "staradmin.exe";
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-            startInfo.FileName = "staradmin.exe";
+            startInfo.FileName = string.IsNullOrEmpty(rc.StarcounterBinDirectory) ? scFileName : Path.Combine(rc.StarcounterBinDirectory, scFileName);
             startInfo.Arguments = $"--database={rc.ScDatabase} list app";
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
@@ -232,7 +238,7 @@ namespace CustomWatchdog
             LoadConfigFromFile();
             ThreadPool.QueueUserWorkItem(o => { RunForever(); });
         }
-        
+
         private void OverrideSettings(string[] args)
         {
             if (args.Length > 0)
