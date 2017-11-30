@@ -45,7 +45,7 @@ The full structure of ```cbwatchdog.json``` is as following:
     {
       "recoveryBatch": "cbwatchdog.bat",
       "scDatabase": "default",
-      "overrideRecoveryExecutionTimeout":"10000",
+      "overrideRecoveryExecutionTimeout": "10000",
       "processes": ["ProcessName"],
       "scAppNames": ["ApplicationName"]
     }
