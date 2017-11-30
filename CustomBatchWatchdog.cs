@@ -14,15 +14,15 @@ namespace CustomWatchdog
     public partial class CustomBatchWatchdog : ServiceBase
     {
         // defaults (can be overriden from a config file)
-        int healthCheckInterval = 10000;
-        uint recoveryExecutionTimeout = 60000 * 5;
-        int criticalCounts = 10;
-        bool noConsoleForRecoveryScript = false;
-        List<RecoveryItem> recoveryItems = new List<RecoveryItem>();
+        private int healthCheckInterval = 10000;
+        private uint recoveryExecutionTimeout = 60000 * 5;
+        private int criticalCounts = 10;
+        private bool noConsoleForRecoveryScript = false;
+        private List<RecoveryItem> recoveryItems = new List<RecoveryItem>();
 
-        // local constants (not configurable)
-        const string configFileName = "cbwatchdog.json";
-        const string eventLogSource = "Custom Batch Watchdog";
+
+        private string configFileName = "cbwatchdog.json";
+        private string eventLogSource = "Custom Batch Watchdog";
 
         // Windows event log handling
         private void InitEventLog()
@@ -42,6 +42,9 @@ namespace CustomWatchdog
             try
             {
                 JavaScriptSerializer ser = new JavaScriptSerializer();
+
+                PrintInfo("Reading Configuration File :" + configFileName);
+
                 var dict = ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(configFileName));
 
                 if (dict.ContainsKey("healthCheckInterval"))
@@ -72,6 +75,17 @@ namespace CustomWatchdog
                         {
                             recoveryItem.RecoveryBatch = (string)recoveryItemDict["recoveryBatch"];
                         }
+
+                        if (recoveryItemDict.ContainsKey("overrideRecoveryExecutionTimeout"))
+                        {
+                            recoveryItem.OverrideRecoveryExecutionTimeout = uint.Parse((string)recoveryItemDict["overrideRecoveryExecutionTimeout"]);
+                        }
+
+                        if (recoveryItemDict.ContainsKey("starcounterBinDirectory"))
+                        {
+                            recoveryItem.StarcounterBinDirectory = (string)recoveryItemDict["starcounterBinDirectory"];
+                        }
+
                         if (recoveryItemDict.ContainsKey("scDatabase"))
                         {
                             recoveryItem.ScDatabase = (string)recoveryItemDict["scDatabase"];
@@ -103,7 +117,7 @@ namespace CustomWatchdog
                 PrintInfo("Watchdog will be started with:\n" +
                    "    healthCheckInterval : " + healthCheckInterval.ToString() + "\n" +
                    "    recoveryExecutionTimeout : " + recoveryExecutionTimeout.ToString() + "\n" +
-                   "    noConsoleForRecoveryScript : " + noConsoleForRecoveryScript.ToString() + "\n" + 
+                   "    noConsoleForRecoveryScript : " + noConsoleForRecoveryScript.ToString() + "\n" +
                    "    criticalCounts : " + criticalCounts.ToString() + "\n" +
                    recoveryItemsInfo
                    );
@@ -117,6 +131,10 @@ namespace CustomWatchdog
         private void Recover(RecoveryItem rc)
         {
             ApplicationLoader.PROCESS_INFORMATION procInfo;
+            if (rc.OverrideRecoveryExecutionTimeout != 0)
+            {
+                recoveryExecutionTimeout = rc.OverrideRecoveryExecutionTimeout;
+            }
             ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, noConsoleForRecoveryScript, recoveryExecutionTimeout, PrintInfo, out procInfo);
         }
 
@@ -140,15 +158,16 @@ namespace CustomWatchdog
                     return false;
                 }
             }
-            
+
             return CheckStarcounterApps(rc);
         }
 
         private bool CheckStarcounterApps(RecoveryItem rc)
         {
+            var scFileName = "staradmin.exe";
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-            startInfo.FileName = "staradmin.exe";
+            startInfo.FileName = string.IsNullOrEmpty(rc.StarcounterBinDirectory) ? scFileName : Path.Combine(rc.StarcounterBinDirectory, scFileName);
             startInfo.Arguments = $"--database={rc.ScDatabase} list app";
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
@@ -173,7 +192,7 @@ namespace CustomWatchdog
                     int cntr = 0;
 
                     if (check == false)
-                    {    
+                    {
                         do
                         {
                             cntr++;
@@ -206,16 +225,45 @@ namespace CustomWatchdog
                 Thread.Sleep(healthCheckInterval);
             }
         }
-
         protected override void OnStart(string[] args)
         {
             //System.Diagnostics.Debugger.Launch();
             PrintInfo("Custom batch watchdog has been started.");
+
+            if (args.Length > 0)
+            {
+                OverrideSettings(args);
+            }
+
             LoadConfigFromFile();
             ThreadPool.QueueUserWorkItem(o => { RunForever(); });
         }
 
+        private void OverrideSettings(string[] args)
+        {
+            if (args.Length > 0)
+            {
+                configFileName = args[0];
+                if (configFileName.IndexOf('/') > -1)
+                {
+                    configFileName = configFileName.Replace("/", string.Empty);
+                }
+
+                PrintInfo("Config file updated to: " + configFileName);
+            }
+            if (args.Length > 1)
+            {
+                eventLogSource = args[1];
+                if (eventLogSource.IndexOf('/') > -1)
+                {
+                    eventLogSource = eventLogSource.Replace("/", string.Empty);
+                }
+                PrintInfo("Event Source Name updated to: " + eventLogSource);
+            }
+        }
+
         public CustomBatchWatchdog() { InitializeComponent(); }
+
         protected override void OnStop()
         {
             PrintInfo("Custom batch watchdog has been signalled to stop.");

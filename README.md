@@ -13,6 +13,10 @@ The Windows system service ```Custom Batch Watchdog``` (```cbwatchdog```) watche
 5. Navigate to a services management console (```Win+R``` -> ```services.msc``` -> ```Enter```) and hit ```Start the service```: ![](./docs/Service-Start.png)
 6. Notice that ```notepad``` is now running. Try to close ```notepad``` and see what happens.
 
+Optional:
+If you don't to use the ```cbwatchdog.json``` file in ```%windir%/System32``` run the command ```net start CustomBatchWatchdog /"C:\Watchdog\cbwatchdog.json" /CBWatchDog```. This will update the config file location to ```C:\Watchdog\cbwatchdog.json``` and start the service at the same time. The second argument here is optional, it specifies the name of the ```Application Event``` log name. If not specifiled the log name would be "Custom Batch Watchdog" by default.
+
+
 The service is installed with ```Manual``` type of startup. In order to have the watchdog fire up at a system startup, change the startup type to ```Automatic``` by right-clicking on a service and choosing the type: ![](./docs/Service-Start-2.png)
 
 Now, if you restart Windows, the first thing you'll see after reboot is ```notepad```.
@@ -41,6 +45,7 @@ The full structure of ```cbwatchdog.json``` is as following:
     {
       "recoveryBatch": "cbwatchdog.bat",
       "scDatabase": "default",
+      "overrideRecoveryExecutionTimeout": "10000",
       "processes": ["ProcessName"],
       "scAppNames": ["ApplicationName"]
     }
@@ -58,6 +63,7 @@ bool noConsoleForRecoveryScript = false; // true: Show console for recoveryBatch
 ```
 
 ```recoveryItems``` is an array in order to be able to monitor several different Starcounter databases and have unique ```recoveryBatch``` files. If any of the following are not running, then ```recoveryBatch``` will be executed.
+```overrideRecoveryExecutionTimeout``` overrides the ```recoveryExecutionTimeout``` for the recovery item if specified.
 * ```processes```: Observing if these processes are running
 * ```scAppNames```: Observing if these apps are running in the target ```"scDatabase"``` Starcounter database
 
@@ -70,4 +76,4 @@ bool allAppsAreRunning = scAppNames.All(appName => stdOutput.Contains($"{appName
 
 ### Uninstallation
 
-Open Admin-rights command prompt, go to your service exe location and fire ```installutil /u cbwatchdog.exe```. A faster way is to type: ```sc delete "Custom Batch Watchdog"```.
+Open Admin-rights command prompt, go to your service exe location and fire ```installutil /u cbwatchdog.exe```. A faster way is to type: ```sc delete "CustomBatchWatchdog"```.
