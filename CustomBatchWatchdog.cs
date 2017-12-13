@@ -39,13 +39,14 @@ namespace CustomWatchdog
 
         private void LoadConfigFromFile()
         {
+            string cfgPath = null;
             try
             {
                 JavaScriptSerializer ser = new JavaScriptSerializer();
+                cfgPath = GetConfigFile();
+                PrintInfo("Reading Configuration File :" + cfgPath);
 
-                PrintInfo("Reading Configuration File :" + configFileName);
-
-                var dict = ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(configFileName));
+                var dict = ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(cfgPath));
 
                 if (dict.ContainsKey("healthCheckInterval"))
                 {
@@ -124,8 +125,21 @@ namespace CustomWatchdog
             }
             catch (IOException e)
             {
-                throw new Exception("Invalid format on: " + configFileName, e);
+                var name = cfgPath ?? configFileName;
+                throw new Exception("Invalid format on: " + name, e);
             }
+        }
+
+        /// <summary>
+        /// Looks for a config file in the same directory as the assembly
+        /// </summary>
+        /// <returns></returns>
+        private string GetConfigFile()
+        {
+            var file = new Uri(GetType().Assembly.Location).LocalPath;
+            var dir = Path.GetDirectoryName(file);
+            return Path.Combine(dir, configFileName);
+            
         }
 
         private void Recover(RecoveryItem rc)
