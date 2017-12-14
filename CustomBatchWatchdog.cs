@@ -13,6 +13,7 @@ namespace CustomWatchdog
 {
     public partial class CustomBatchWatchdog : ServiceBase
     {
+        private readonly ManualResetEventSlim m_stopEvt = new ManualResetEventSlim(false);
         // defaults (can be overriden from a config file)
         private int healthCheckInterval = 10000;
         private uint recoveryExecutionTimeout = 60000 * 5;
@@ -136,9 +137,18 @@ namespace CustomWatchdog
         /// <returns></returns>
         private string GetConfigFile()
         {
-            var file = new Uri(GetType().Assembly.Location).LocalPath;
-            var dir = Path.GetDirectoryName(file);
-            return Path.Combine(dir, configFileName);
+            // Check if the path is rooted
+            if (Path.IsPathRooted(configFileName))
+            {
+                // A full path has been provided in some way, probably command line args
+                return configFileName;
+            }
+            else
+            {
+                var file = new Uri(GetType().Assembly.Location).LocalPath;
+                var dir = Path.GetDirectoryName(file);
+                return Path.Combine(dir, configFileName);
+            }
             
         }
 
@@ -198,7 +208,7 @@ namespace CustomWatchdog
 
         private void RunForever()
         {
-            while (true)
+            while (!m_stopEvt.IsSet)
             {
                 foreach (RecoveryItem rc in recoveryItems)
                 {
@@ -236,7 +246,8 @@ namespace CustomWatchdog
                         } while (check == false);
                     }
                 }
-                Thread.Sleep(healthCheckInterval);
+                m_stopEvt.Wait(healthCheckInterval);
+                //Thread.Sleep(healthCheckInterval);
             }
         }
         protected override void OnStart(string[] args)
@@ -281,6 +292,7 @@ namespace CustomWatchdog
         protected override void OnStop()
         {
             PrintInfo("Custom batch watchdog has been signalled to stop.");
+            m_stopEvt.Set();
         }
     }
 }
