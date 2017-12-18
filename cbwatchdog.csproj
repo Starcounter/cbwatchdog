@@ -36,7 +36,9 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Core" />
+    <Reference Include="System.DirectoryServices.AccountManagement" />
     <Reference Include="System.Management" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -47,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApplicationInlineLoader.cs" />
     <Compile Include="ApplicationLoader.cs" />
     <Compile Include="CustomBatchWatchdog.cs">
       <SubType>Component</SubType>
@@ -54,7 +57,11 @@
     <Compile Include="CustomBatchWatchdog.Designer.cs">
       <DependentUpon>CustomBatchWatchdog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Model\RecoveryItem.cs" />
+    <Compile Include="EventServiceLog.cs" />
+    <Compile Include="IServiceLog.cs" />
+    <Compile Include="Model\JsonData.cs" />
+    <Compile Include="Model\RecoveryConfig.cs" />
+    <Compile Include="Model\RecoveryConfigItem.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProjectInstaller.cs">
       <SubType>Component</SubType>

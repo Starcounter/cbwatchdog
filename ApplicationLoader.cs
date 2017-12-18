@@ -2,9 +2,14 @@
 using System.Security;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.ComponentModel;
 
 // Credited to: http://www.codeproject.com/Articles/35773/Subverting-Vista-UAC-in-Both-32-and-64-bit-Archite
 
+/// <summary>
+/// TODO: This is not necessary when running in service mode. There are no UAC prompts in session 0.
+/// Unless I'm missing something here
+/// </summary>
 namespace Toolkit
 {
     /// <summary>
@@ -124,6 +129,7 @@ namespace Toolkit
         [DllImport("advapi32", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
         static extern bool OpenProcessToken(IntPtr ProcessHandle, int DesiredAccess, ref IntPtr TokenHandle);
 
+
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
@@ -213,15 +219,24 @@ namespace Toolkit
                                             ref si,                 // pointer to STARTUPINFO structure
                                             out procInfo            // receives information about new process
                                             );
+            var errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
 
             // check if CreateProcessAsUser call is completed withing recoveryExecutionTimeout
-            if (WaitForSingleObject(procInfo.hProcess, recoveryExecutionTimeout) == WAIT_OBJECT_0)
+            var waitResult = uint.MaxValue;
+
+            if (result)
+            {
+                waitResult = WaitForSingleObject(procInfo.hProcess, recoveryExecutionTimeout);
+                errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message; 
+            }
+
+            if (waitResult == WAIT_OBJECT_0)
             {
                 // CreateProcessAsUser execution passed within recoveryExecutionTimeout, DO NOTHING
             }
             else
             {
-                PrintInfo($"Recovery execution within execution timeout \"recoveryExecutionTimeout={recoveryExecutionTimeout.ToString()}\" for file {applicationName} FAILED");
+                PrintInfo($"Recovery execution within execution timeout \"recoveryExecutionTimeout={recoveryExecutionTimeout.ToString()}\" for file {applicationName} FAILED, {errorMessage}");
                 if (TerminateProcess(procInfo.hProcess, 1) == true)
                 {
                     PrintInfo($"Terminate of {applicationName} execution SUCCESS");
