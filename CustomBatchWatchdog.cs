@@ -8,7 +8,6 @@ using System.Threading;
 using Toolkit;
 using System.Linq;
 using System.Security.Principal;
-using System.DirectoryServices.AccountManagement;
 
 namespace CustomWatchdog
 {
@@ -35,7 +34,7 @@ namespace CustomWatchdog
 
         public CustomBatchWatchdog(IServiceLog log)
         {
-            m_sid = UserPrincipal.Current.Sid;
+            m_sid = WindowsIdentity.GetCurrent().User;
             InitializeComponent();
             m_log = log ?? new EventServiceLog(this);
             IsServiceAccount = WellKnownSidType.LocalServiceSid.Equals(m_sid) || WellKnownSidType.LocalSystemSid.Equals(m_sid);
