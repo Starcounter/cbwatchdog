@@ -1,12 +1,22 @@
-﻿namespace CustomWatchdog
+﻿using System;
+
+namespace CustomWatchdog
 {
     /// <summary>
     /// The interface of the log to use for the service.
     /// </summary>
-    public interface IServiceLog
+    public interface IServiceLog : IDisposable
     {
-        void Warn(string evt);
-        void Error(string evt);
-        void Info(string evt);
+        /// <summary>
+        /// The level that applies to this log
+        /// </summary>
+        ServiceLogLevel Level { get; set; }
+
+        /// <summary>
+        /// Write a log
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="msg"></param>
+        void Write(ServiceLogLevel level, string msg);
     }
 }

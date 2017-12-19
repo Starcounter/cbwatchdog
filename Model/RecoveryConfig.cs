@@ -29,7 +29,7 @@ using System;
 namespace CustomWatchdog
 {
     [DataContract]
-    public class RecoveryConfig  : JsonData
+    public class RecoveryConfig : JsonData
     {
         [DataMember(Name = "healthCheckInterval")]
         public uint HealthCheckInterval { get; set; } = 10000;
@@ -44,8 +44,14 @@ namespace CustomWatchdog
         [DataMember(Name = "criticalCounts")]
         public uint CriticalCounts { get; set; } = 10;
 
-        [DataMember(Name = "recoveryItems")]
+        [DataMember(Name = "recoveryItems", EmitDefaultValue = false)]
         public List<RecoveryConfigItem> RecoveryItems { get; set; }
+
+        /// <summary>
+        /// User defined logs
+        /// </summary>
+        [DataMember(Name = "logs", EmitDefaultValue = false)]
+        public List<RecoveryConfigLog> Logs { get; set; }
 
 
         /// <summary>
@@ -69,7 +75,7 @@ namespace CustomWatchdog
         public static RecoveryConfig Parse(FileStream stream)
         {
             return Parse<RecoveryConfig>(stream);
-            
+
         }
 
         private class Validator : IEqualityComparer<RecoveryConfigItem>
@@ -103,7 +109,7 @@ namespace CustomWatchdog
                         {
                             throw new ApplicationException($"Invalid configuration, batch file is required{Environment.NewLine}{item}");
                         }
-                        else 
+                        else
                         {
                             var key = b.ToLowerInvariant();
 
@@ -114,7 +120,7 @@ namespace CustomWatchdog
                             hashSet.Add(key);
                         }
                     }
-                }                
+                }
             }
 
             public bool Equals(RecoveryConfigItem x, RecoveryConfigItem y)

@@ -8,16 +8,18 @@ using System.Threading;
 using Toolkit;
 using System.Linq;
 using System.Security.Principal;
+using System.Text;
 
 namespace CustomWatchdog
 {
     public partial class CustomBatchWatchdog : ServiceBase
     {
+        private readonly ServiceLogManager m_log = new ServiceLogManager();
+        private readonly IServiceLog m_defaultLog;
         private readonly string m_assemblyDirectory;
-        private readonly SecurityIdentifier m_sid;
+        private readonly UserInfo m_user;
         private readonly ManualResetEventSlim m_stopEvt = new ManualResetEventSlim(false);
         private readonly ManualResetEventSlim m_doneEvt = new ManualResetEventSlim(true);
-        private readonly IServiceLog m_log;
 
         // defaults (can be overriden from a config file)
         private RecoveryConfig m_config;
@@ -34,18 +36,14 @@ namespace CustomWatchdog
 
         public CustomBatchWatchdog(IServiceLog log)
         {
-            m_sid = WindowsIdentity.GetCurrent().User;
-            InitializeComponent();
-            m_log = log ?? new EventServiceLog(this);
-            IsServiceAccount = WellKnownSidType.LocalServiceSid.Equals(m_sid) || WellKnownSidType.LocalSystemSid.Equals(m_sid);
+            m_user = new UserInfo();
+            InitializeComponent();            
             var file = new Uri(GetType().Assembly.Location).LocalPath;
             m_assemblyDirectory = Path.GetDirectoryName(file);
+            m_defaultLog = log ?? new ServiceLogEvent(this);
+            m_log.Add(m_defaultLog);
         }
 
-        /// <summary>
-        /// True if running as Local System or Local Service
-        /// </summary>
-        public bool IsServiceAccount { get; }
 
         private List<RecoveryConfigItem> RecoveryItems => m_config?.RecoveryItems;
 
@@ -57,11 +55,15 @@ namespace CustomWatchdog
             if (!EventLog.SourceExists(eventLogSource))
                 EventLog.CreateEventSource(eventLogSource, "Application");
         }
-        private void PrintWarning(string evt) => m_log.Warn(evt);
+        private void PrintWarning(string evt) => m_log.Write(ServiceLogLevel.Warning, evt);
 
-        private void PrintError(string evt) => m_log.Error(evt);
+        private void PrintError(string evt) => m_log.Write(ServiceLogLevel.Error, evt);
 
-        private void PrintInfo(string evt) => m_log.Info(evt);
+        private void PrintInfo(string evt) => m_log.Write(ServiceLogLevel.Info, evt);
+
+        private void PrintDebug(string evt) => m_log.Write(ServiceLogLevel.Debug, evt);
+
+        private void PrintTrace(string evt) => m_log.Write(ServiceLogLevel.Trace, evt);
 
 
         private void LoadConfigFromFile()
@@ -77,15 +79,35 @@ namespace CustomWatchdog
                 cfg.Validate();
                 m_config = cfg;
 
+                ApplyLogs(cfg.Logs);
+
                 // Just print the json
-                var nta = (NTAccount)m_sid.Translate(typeof(NTAccount));
-                PrintInfo($"[{nta.Value}] Watchdog will be started with: {Environment.NewLine}{cfg}");
+                var username = m_user.Name;
+                PrintInfo($"[{username}] Watchdog will be started with: {Environment.NewLine}{cfg}");
             }
             catch (IOException e)
             {
                 var name = cfgPath ?? configFileName;
                 throw new Exception("Invalid format on: " + name, e);
             }
+        }
+
+        private void ApplyLogs(List<RecoveryConfigLog> logs)
+        {
+            var definedLogs = ServiceLogManager.Create(logs);
+
+            if (definedLogs.Any())
+            {
+                // We got some user defined logs, lower the level of the default log
+                m_defaultLog.Level = ServiceLogLevel.Error;
+
+                foreach (var log in definedLogs)
+                {
+                    m_log.Add(log);
+                    m_log.Write(ServiceLogLevel.Debug, log.ToString());
+                }                
+            }
+            m_log.Write(ServiceLogLevel.Debug, $"[{m_log.Level}] Enabled");
         }
 
         /// <summary>
@@ -121,34 +143,112 @@ namespace CustomWatchdog
                 timeout = rc.OverrideRecoveryExecutionTimeout;
             }
             // This is the way to go if running as a service. But when debugging we don't have this privelege. Just spawn a new process
-            if (IsServiceAccount)
+            if (m_user.IsServiceAccount || m_user.IsSystemAccount)
             {
-                ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, m_config.NoConsoleForRecoveryScript, timeout, PrintInfo, out procInfo);
+                ApplicationLoader.StartProcessAndBypassUAC(rc.RecoveryBatch, m_config.NoConsoleForRecoveryScript, timeout, PrintDebug, out procInfo);
             }
             else
             {
-                ApplicationInlineLoader.Start(GetFile(rc.RecoveryBatch), m_config.NoConsoleForRecoveryScript, timeout, PrintInfo);
+                ApplicationInlineLoader.Start(GetFile(rc.RecoveryBatch), m_config.NoConsoleForRecoveryScript, timeout, PrintDebug);
             }
             // It can take a little while for the process to be spawned, the question is how long...
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="rc"></param>
+        /// <param name="retryTimespan">Retry to find the process for this interval</param>
+        /// <returns></returns>
+        private bool Check(RecoveryConfigItem rc, TimeSpan retryTimespan)
+        {
+            var watch = Stopwatch.StartNew();
+            string failed;
 
+            do
+            {
+                if (DoCheck(rc, out failed))
+                {
+                    PrintDebug($"Find took {watch.Elapsed.TotalMilliseconds}ms");
+                    return true;
+                }
+                Thread.Sleep(1);
+
+            } while (watch.Elapsed < retryTimespan);
+
+            return false;
+        }
 
         private bool Check(RecoveryConfigItem rc)
+        {
+            string procName;
+
+            if (!DoCheck(rc, out procName))
+            {
+                LogCheckFailed(procName);
+                return false;
+            }
+            return true;
+        }
+
+        private void LogCheckFailed(string procName)
+        {
+            PrintWarning($"Watchdog couldn't find the process {procName}.");
+        }
+
+        private bool DoCheck(RecoveryConfigItem rc, out string failed)
         {
             // It's faster to get by name on each
             foreach (string procName in rc.Processes)
             {
-                var found = Process.GetProcessesByName(procName).Length > 0;
+                var procs = Process.GetProcessesByName(procName);
+                var found = procs.Length > 0;
 
                 if (!found)
                 {
-                    PrintWarning("Watchdog couldn't find the process " + procName + ".");
+
+                    if (m_log.Level == ServiceLogLevel.Trace)
+                    {
+#if DBG_LOG
+                        m_log.Write(ServiceLogLevel.Trace, $"Failed to find '{procName}'{Environment.NewLine}{GetRunning()}");
+#else
+                        m_log.Write(ServiceLogLevel.Trace, $"Failed to find '{procName}'");
+#endif
+                    }
+
+                    failed = procName;
                     return false;
                 }
+                else if (m_log.Level == ServiceLogLevel.Trace)
+                {
+                    var procInfo = string.Join(Environment.NewLine, procs.Select(p => $"[{p.ProcessName}] {p.Id}"));
+                    m_log.Write(ServiceLogLevel.Trace, $"Found '{procName}' Processes:{Environment.NewLine}{procInfo}");
+                }
             }
-
+            failed = null;
             return CheckStarcounterApps(rc);
+        }
+
+        private string GetRunning()
+        {
+            var procs = Process.GetProcesses();
+            var sb = new StringBuilder(procs.Length * 10);
+            var nameWidth = procs.Max(p => p.ProcessName.Length) + 1;
+            var pidWidth = int.MaxValue.ToString().Length + 1;
+
+            foreach (var p in procs.OrderBy(p => p.ProcessName))
+            {
+                try
+                {
+                    var paddedName = p.ProcessName.PadRight(nameWidth);
+                    var paddedPid = p.Id.ToString().PadRight(pidWidth);
+                    sb.AppendLine($"{paddedName}id: {paddedPid}, Session: {p.SessionId}");
+                }
+                catch
+                {
+                }
+            }
+            return sb.ToString();
         }
 
         private bool CheckStarcounterApps(RecoveryConfigItem rc)
@@ -157,8 +257,10 @@ namespace CustomWatchdog
 
             if (apps != null && apps.Count > 0)
             {
+                var appNames = string.Join(", ", apps);                
                 var db = rc.ScDatabase ?? "default";
                 var scFileName = "staradmin.exe";
+                PrintDebug($"Checking starcounter apps: {appNames}, db: {db}");
                 System.Diagnostics.Process process = new System.Diagnostics.Process();
                 System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
                 startInfo.FileName = string.IsNullOrEmpty(rc.StarcounterBinDirectory) ? scFileName : Path.Combine(rc.StarcounterBinDirectory, scFileName);
@@ -175,6 +277,7 @@ namespace CustomWatchdog
 
                 return allAppsAreRunning;
             }
+            PrintDebug($"Skipped starcounter apps, not defined");
             return true;
         }
 
@@ -200,6 +303,8 @@ namespace CustomWatchdog
             // Apply sanity check for the values
             healthCheckInterval = Math.Max(1, healthCheckInterval); // Sleep at least 1 ms
             criticalCounts = Math.Max(1, criticalCounts); // Make at least one attempt
+            // It probably takes a little while for the process to appear, try for 1 sec to find the process?
+            var checkRetry = TimeSpan.FromMilliseconds(Math.Min(healthCheckInterval, 1000));
 
 
             while (!m_stopEvt.IsSet)
@@ -217,24 +322,25 @@ namespace CustomWatchdog
                             if (cntr++ == criticalCounts)
                             {
                                 // maximum number of recovery attemps has been succeeded, abort
-                                PrintInfo($"{(criticalCounts).ToString()} recovery attemps for {rc.RecoveryBatch} file has been made, aborting further attemps and moving on with next revoceryItem");
+                                PrintDebug($"{(criticalCounts).ToString()} recovery attemps for {rc.RecoveryBatch} file has been made, aborting further attemps and moving on with next revoceryItem");
                                 break;
                             }
                             else
                             {
                                 // execute recovery
-                                PrintInfo("Watchdog's recovery attempt #" + (cntr).ToString() + " procedure started: " + rc.RecoveryBatch);
+                                PrintDebug("Watchdog's recovery attempt #" + (cntr).ToString() + " procedure started: " + rc.RecoveryBatch);
                                 Recover(rc);
                             }
 
-                            check = Check(rc);
+                            check = Check(rc, checkRetry);
                             if (check == true)
                             {
-                                PrintInfo("Watchdog's recovery attempt #" + (cntr).ToString() + " SUCCESS: " + rc.RecoveryBatch);
+                                PrintDebug("Watchdog's recovery attempt #" + (cntr).ToString() + " SUCCESS: " + rc.RecoveryBatch);
                             }
                             else
                             {
-                                PrintInfo("Watchdog's recovery attempt #" + (cntr).ToString() + " FAILED: " + rc.RecoveryBatch);
+                                // TODO: level?
+                                PrintWarning("Watchdog's recovery attempt #" + (cntr).ToString() + " FAILED: " + rc.RecoveryBatch);
                             }
                         } while (check == false);
                     }
