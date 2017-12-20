@@ -55,7 +55,7 @@ namespace CustomWatchdog
                 get
                 {
                     var t =  m_owner.LogType;
-                    return (ServiceLogType)Enum.Parse(typeof(ServiceLogType), t);
+                    return (ServiceLogType)Enum.Parse(typeof(ServiceLogType), t, true);
                 }
                 set
                 {
@@ -73,7 +73,7 @@ namespace CustomWatchdog
                     {
                         return ServiceLogLevel.Info;
                     }
-                    return (ServiceLogLevel)Enum.Parse(typeof(ServiceLogLevel), t);
+                    return (ServiceLogLevel)Enum.Parse(typeof(ServiceLogLevel), t, true);
                 }
                 set
                 {
