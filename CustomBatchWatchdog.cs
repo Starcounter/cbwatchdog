@@ -129,7 +129,7 @@ namespace CustomWatchdog
             }
         }
 
-        private void Recover(RecoveryConfigItem rc)
+        private TimeSpan Recover(RecoveryConfigItem rc)
         {
             ApplicationLoader.PROCESS_INFORMATION procInfo;
             var timeout = m_config.RecoveryExecutionTimeout;
@@ -138,6 +138,8 @@ namespace CustomWatchdog
             {
                 timeout = rc.OverrideRecoveryExecutionTimeout;
             }
+            var recoverTime = TimeSpan.FromMilliseconds((int)timeout);
+            var watch = Stopwatch.StartNew();
             // This is the way to go if running as a service. But when debugging we don't have this privelege. Just spawn a new process
             if (m_user.IsServiceAccount || m_user.IsSystemAccount)
             {
@@ -147,7 +149,8 @@ namespace CustomWatchdog
             {
                 ApplicationInlineLoader.Start(GetFile(rc.RecoveryBatch), m_config.NoConsoleForRecoveryScript, timeout, PrintDebug);
             }
-            // It can take a little while for the process to be spawned, the question is how long...
+            // Return the amount of time left to wait for recovery execution
+            return recoverTime - watch.Elapsed;
         }
 
         /// <summary>
@@ -299,8 +302,6 @@ namespace CustomWatchdog
             // Apply sanity check for the values
             healthCheckInterval = Math.Max(1, healthCheckInterval); // Sleep at least 1 ms
             criticalCounts = Math.Max(1, criticalCounts); // Make at least one attempt
-            // It probably takes a little while for the process to appear, try for 1 sec to find the process?
-            var checkRetry = TimeSpan.FromMilliseconds(Math.Min(healthCheckInterval, 1000));
 
 
             while (!m_stopEvt.IsSet)
@@ -314,6 +315,7 @@ namespace CustomWatchdog
                     {
                         do
                         {
+                            TimeSpan itemRecoveryTs;
                             // Make at least one attempt
                             if (cntr++ == criticalCounts)
                             {
@@ -325,10 +327,11 @@ namespace CustomWatchdog
                             {
                                 // execute recovery
                                 PrintDebug("Watchdog's recovery attempt #" + (cntr).ToString() + " procedure started: " + rc.RecoveryBatch);
-                                Recover(rc);
+                                itemRecoveryTs = Recover(rc);
                             }
 
-                            check = Check(rc, checkRetry);
+                            check = Check(rc, itemRecoveryTs);
+
                             if (check == true)
                             {
                                 PrintDebug("Watchdog's recovery attempt #" + (cntr).ToString() + " SUCCESS: " + rc.RecoveryBatch);
