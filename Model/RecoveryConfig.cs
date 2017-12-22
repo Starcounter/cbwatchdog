@@ -45,13 +45,13 @@ namespace CustomWatchdog
         public uint CriticalCounts { get; set; } = 10;
 
         [DataMember(Name = "recoveryItems", EmitDefaultValue = false)]
-        public List<RecoveryConfigItem> RecoveryItems { get; set; }
+        public List<RecoveryConfigItem> RecoveryItems { get; set; } = new List<RecoveryConfigItem>();
 
         /// <summary>
         /// User defined logs
         /// </summary>
         [DataMember(Name = "logs", EmitDefaultValue = false)]
-        public List<RecoveryConfigLog> Logs { get; set; }
+        public List<RecoveryConfigLog> Logs { get; set; } = new List<RecoveryConfigLog>();
 
 
         /// <summary>

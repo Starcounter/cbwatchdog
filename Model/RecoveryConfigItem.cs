@@ -18,10 +18,10 @@ namespace CustomWatchdog
         public string ScDatabase { get; set; }
 
         [DataMember(Name = "processes", EmitDefaultValue = false)]
-        public List<string> Processes { get; set; }
+        public List<string> Processes { get; set; } = new List<string>();
 
         [DataMember(Name = "scAppNames", EmitDefaultValue = false)]
-        public List<string> ScAppNames { get; set; }
+        public List<string> ScAppNames { get; set; } = new List<string>();
 
         [DataMember(Name = "starcounterBinDirectory", EmitDefaultValue = false)]
         public string StarcounterBinDirectory { get; set; }
