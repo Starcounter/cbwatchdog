@@ -45,16 +45,10 @@ namespace CustomWatchdog
         }
 
 
-        private List<RecoveryConfigItem> RecoveryItems => m_config?.RecoveryItems;
+        private IList<RecoveryConfigItem> RecoveryItems => m_config?.RecoveryItems;
 
         internal string EventLogSource { get { return eventLogSource; } }
 
-        // Windows event log handling
-        private void InitEventLog()
-        {
-            if (!EventLog.SourceExists(eventLogSource))
-                EventLog.CreateEventSource(eventLogSource, "Application");
-        }
         private void PrintWarning(string evt) => m_log.Write(ServiceLogLevel.Warning, evt);
 
         private void PrintError(string evt) => m_log.Write(ServiceLogLevel.Error, evt);
@@ -78,7 +72,6 @@ namespace CustomWatchdog
                 var cfg = RecoveryConfig.Parse(fi);
                 cfg.Validate();
                 m_config = cfg;
-
                 ApplyLogs(cfg.Logs);
 
                 // Just print the json
@@ -92,22 +85,25 @@ namespace CustomWatchdog
             }
         }
 
-        private void ApplyLogs(List<RecoveryConfigLog> logs)
+        private void ApplyLogs(IList<RecoveryConfigLog> logs)
         {
-            var definedLogs = ServiceLogManager.Create(logs);
-
-            if (definedLogs.Any())
+            if (logs != null)
             {
-                // We got some user defined logs, lower the level of the default log
-                m_defaultLog.Level = ServiceLogLevel.Error;
+                var definedLogs = ServiceLogManager.Create(logs);
 
-                foreach (var log in definedLogs)
+                if (definedLogs.Any())
                 {
-                    m_log.Add(log);
-                    m_log.Write(ServiceLogLevel.Debug, log.ToString());
-                }                
+                    // We got some user defined logs, lower the level of the default log
+                    m_defaultLog.Level = ServiceLogLevel.Error;
+
+                    foreach (var log in definedLogs)
+                    {
+                        m_log.Add(log);
+                        m_log.Write(ServiceLogLevel.Debug, log.ToString());
+                    }
+                }
+                m_log.Write(ServiceLogLevel.Debug, $"[{m_log.Level}] Enabled"); 
             }
-            m_log.Write(ServiceLogLevel.Debug, $"[{m_log.Level}] Enabled");
         }
 
         /// <summary>

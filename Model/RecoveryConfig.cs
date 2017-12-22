@@ -78,6 +78,13 @@ namespace CustomWatchdog
 
         }
 
+        protected override void OnDeserialized()
+        {
+            if (RecoveryItems == null) RecoveryItems = new List<RecoveryConfigItem>();
+            if (Logs == null) Logs = new List<RecoveryConfigLog>();
+        }
+
+
         private class Validator : IEqualityComparer<RecoveryConfigItem>
         {
             private readonly RecoveryConfig m_owner;

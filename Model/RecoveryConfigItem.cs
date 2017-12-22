@@ -45,5 +45,10 @@ namespace CustomWatchdog
 
         }
 
+        protected override void OnDeserialized()
+        {
+            if (Processes == null) Processes = new List<string>();
+            if (ScAppNames == null) ScAppNames = new List<string>();
+        }
     }
 }

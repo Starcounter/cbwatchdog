@@ -34,7 +34,7 @@ namespace CustomWatchdog
             }   
         }
 
-        internal static IEnumerable<IServiceLog> Create(List<RecoveryConfigLog> logDefs)
+        internal static IEnumerable<IServiceLog> Create(IList<RecoveryConfigLog> logDefs)
         {
             if (logDefs != null && logDefs.Count > 0)
             {

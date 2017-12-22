@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
@@ -53,7 +54,17 @@ namespace CustomWatchdog
             where T : JsonData
         {
             DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(T));
-            return (T)ser.ReadObject(stream);
+            var obj = (T)ser.ReadObject(stream);
+            obj.OnDeserialized();
+            return obj;
+
+        }
+
+        /// <summary>
+        /// Called when the instance has been deserialized, can be used to init null values or caches etc.
+        /// </summary>
+        protected virtual void OnDeserialized()
+        {
         }
 
         /// <summary>
@@ -65,11 +76,9 @@ namespace CustomWatchdog
         public static T Parse<T>(string str)
             where T : JsonData
         {
-            DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(T));
-
             using (var stream = new MemoryStream(Encoding.Unicode.GetBytes(str)))
             {
-                return (T)ser.ReadObject(stream);
+                return Parse<T>(stream);
             }
         }
 

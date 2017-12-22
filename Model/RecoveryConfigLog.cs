@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 
@@ -25,19 +24,19 @@ namespace CustomWatchdog
 
 
 
-        public static RecoveryConfigItem Parse(FileInfo fi)
+        public static RecoveryConfigLog Parse(FileInfo fi)
         {
-            return Parse<RecoveryConfigItem>(fi);
+            return Parse<RecoveryConfigLog>(fi);
         }
 
-        public static RecoveryConfigItem Parse(string str)
+        public static RecoveryConfigLog Parse(string str)
         {
-            return Parse<RecoveryConfigItem>(str);
+            return Parse<RecoveryConfigLog>(str);
         }
 
-        public static RecoveryConfigItem Parse(FileStream stream)
+        public static RecoveryConfigLog Parse(FileStream stream)
         {
-            return Parse<RecoveryConfigItem>(stream);
+            return Parse<RecoveryConfigLog>(stream);
 
         }
 
