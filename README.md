@@ -13,8 +13,8 @@ The Windows system service ```Custom Batch Watchdog``` (```cbwatchdog```) watche
 5. Navigate to a services management console (```Win+R``` -> ```services.msc``` -> ```Enter```) and hit ```Start the service```: ![](./docs/Service-Start.png)
 6. Notice that ```notepad``` is now running. Try to close ```notepad``` and see what happens.
 
-Optional:
-If you don't to use the ```cbwatchdog.json``` file in ```%windir%/System32``` run the command ```net start CustomBatchWatchdog /"C:\Watchdog\cbwatchdog.json" /CBWatchDog```. This will update the config file location to ```C:\Watchdog\cbwatchdog.json``` and start the service at the same time. The second argument here is optional, it specifies the name of the ```Application Event``` log name. If not specifiled the log name would be "Custom Batch Watchdog" by default.
+### Updating configuration file path
+By default the configuration file ```cbwatchdog.json``` resides in ```%windir%/System32```. If you want to update this path run the command ```net start CustomBatchWatchdog /"C:\Watchdog\cbwatchdog.json" ```. It will update the config file location to ```C:\Watchdog\cbwatchdog.json``` and start the service at the same time.
 
 
 The service is installed with ```Manual``` type of startup. In order to have the watchdog fire up at a system startup, change the startup type to ```Automatic``` by right-clicking on a service and choosing the type: ![](./docs/Service-Start-2.png)
