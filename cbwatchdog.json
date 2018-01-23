@@ -9,7 +9,7 @@
             "scDatabase": "default",
             "overrideRecoveryExecutionTimeout": "10000",
             "processes": [ "ProcessName" ],
-            "scAppNames": [ "ApplicationName" ]
+            "scAppNames": [ "Notepad" ]
         }
     ]
 }
