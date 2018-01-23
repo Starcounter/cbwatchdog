@@ -128,4 +128,4 @@ bool allAppsAreRunning = scAppNames.All(appName => stdOutput.Contains($"{appName
  
  ```
  sc delete "CustomBatchWatchdog"
- ```.
+ ```
