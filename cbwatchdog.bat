@@ -1,2 +1,2 @@
 cmd /c "Taskkill /F /IM notepad.exe"
-start "" "notepad"
+start "" "%windir%\System32\notepad.exe"
