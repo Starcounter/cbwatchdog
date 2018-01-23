@@ -10,13 +10,14 @@ The Windows system service ```Custom Batch Watchdog``` (```cbwatchdog```) watche
 
 -Download the lastest release binaries from the [Git Repository](https://github.com/Starcounter/cbwatchdog/releases).
 
-*Step 2: To copy executable files * 
+*Step 2: To copy executable files* 
  
 - Copy the following files into the folder where you intend to have the service running on your computer:
 	* cbwatchdog.exe
 	* cbwatchdog.json
+	* cbwatchdog.bat
 
-*Step 3: To register the service * 
+*Step 3: To register the service* 
 
  - Run PowerShell as Administrator.
  - Change the current directory to the directory where you copied the executables files in previous step.
@@ -24,7 +25,7 @@ The Windows system service ```Custom Batch Watchdog``` (```cbwatchdog```) watche
 	```installutil cbwatchdog.exe```
 	It should successfully install the service.
 	
-*Step 4: To configure the service * 
+*Step 4: To configure the service* 
 	
  - In `Run window` enter following command: 
 	```services.msi```
