@@ -116,4 +116,16 @@ bool allAppsAreRunning = scAppNames.All(appName => stdOutput.Contains($"{appName
 
 ## Uninstallation
 
-Open Admin-rights command prompt, go to your service exe location and fire ```installutil /u cbwatchdog.exe```. A faster way is to type: ```sc delete "CustomBatchWatchdog"```.
+*Step 1: To start the service*
+ 
+ - Open PowerShell window with Admin-rights.
+ - Run the following command to run the service:
+ 
+	```
+	installutil /u cbwatchdog.exe
+	```
+ A faster way is to type:
+ 
+ ```
+ sc delete "CustomBatchWatchdog"
+ ```.
