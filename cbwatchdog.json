@@ -5,7 +5,7 @@
     "criticalCounts": "10",
     "recoveryItems": [
         {
-            "recoveryBatch": "cbwatchdog.bat",
+            "recoveryBatch": "C:\\Watchdog\\cbwatchdog.bat",
             "scDatabase": "default",
             "overrideRecoveryExecutionTimeout": "10000",
             "processes": [ "ProcessName" ],
