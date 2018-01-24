@@ -118,9 +118,9 @@ The array ```scAppNames``` of Starcounter applications are evaluated by parsing 
 bool allAppsAreRunning = scAppNames.All(appName => stdOutput.Contains($"{appName} (in {scDatabase})"));
 ```
 
-## Configuring the service for Starcounter Custom Applications. 
+## Configuring for Starcounter Custom Applications. 
 
-The `cbwatchdog` service can be configured to make sure all Starcounter Custom Applications and the required services are always up and running if they get stopped accidentally.
+The `cbwatchdog` service can be configured to monitor Starcounter Custom Applications and the required services are always up and running if they get stopped accidentally.
 
 *Step 1: Creating a `.bat` file* 
 
@@ -142,7 +142,7 @@ Full list of commands that you can use with Starcounter Application Framework ca
 
 Modify the config file to use the `.bat` file created in previous step. Following is a sample `cbwatchdog.config` file:
 
-```
+```json
 {
   "healthCheckInterval": "10000",
   "recoveryExecutionTimeout": "300000",
