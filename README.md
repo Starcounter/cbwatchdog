@@ -1,6 +1,6 @@
 # Custom Batch Watchdog (```cbwatchdog```)
 
-The Windows system service ```Custom Batch Watchdog``` (```cbwatchdog```) watches a list of processes to be in-place and running, and executes a batch file if one or more are missing. Service is configured via ```cbwatchdog.json``` which must be put into ```%windir%/System32``` (which usually is ```C:/windows/system32```). The service is essentially a simple state machine. Every ```healthCheckInterval``` milliseconds it checks whether all the appplications with names from a list ```processes``` are presented. If one or more are not running at a moment of check, the service executes ```recoveryBatch```. After syncronously running ```recoveryBatch``` service starts to check at every ```recoveryPauseInterval``` milliseconds whether the whole list of apps is back again. It checks it in a loop for at most ```criticalCounts``` times, waiting ```recoveryPauseInterval``` milliseconds each time, and, if waiting after ```criticalCounts``` times is still unsucessful, it executes ```recoveryBatch``` again, and the loop repeats.
+The Windows system service ```Custom Batch Watchdog``` (```cbwatchdog```) watches a list of processes to be in-place and running, and executes a batch file if one or more are missing. Service is configured via ```cbwatchdog.json```. The service is essentially a simple state machine. Every ```healthCheckInterval``` milliseconds it checks whether all the appplications with names from a list ```processes``` are presented. If one or more are not running at a moment of check, the service executes ```recoveryBatch```. After syncronously running ```recoveryBatch``` service starts to check at every ```recoveryExecutionTimeout``` milliseconds whether the whole list of apps is back again. It checks it in a loop for at most ```criticalCounts``` times, waiting ```recoveryExecutionTimeout``` milliseconds each time, and, if waiting after ```criticalCounts``` times is still unsucessful, it executes ```recoveryBatch``` again, and the loop repeats.
 
 ## Installing the service
 
@@ -86,6 +86,7 @@ The full structure of ```cbwatchdog.json``` is as following:
       "recoveryBatch": "cbwatchdog.bat",
       "scDatabase": "default",
       "overrideRecoveryExecutionTimeout": "10000",
+	  "starcounterBinDirectory": "C:\\Program Files\\Starcounter",
       "processes": ["ProcessName"],
       "scAppNames": ["ApplicationName"]
     }
@@ -104,14 +105,61 @@ bool noConsoleForRecoveryScript = false; // true: Show console for recoveryBatch
 
 ```recoveryItems``` is an array in order to be able to monitor several different Starcounter databases and have unique ```recoveryBatch``` files. If any of the following are not running, then ```recoveryBatch``` will be executed.
 ```overrideRecoveryExecutionTimeout``` overrides the ```recoveryExecutionTimeout``` for the recovery item if specified.
-* ```processes```: Observing if these processes are running
-* ```scAppNames```: Observing if these apps are running in the target ```"scDatabase"``` Starcounter database
+
+* ```recoveryBatch```: Full path for the batch file that needs to be executed, for example `C:\\Watchdog\\cbwatchdog.bat`
+* ```starcounterBinDirectory```: Directory where star counter is installed.
+* ```processes```: Name of processes that need to be observed, to make sure they are running. Example ```["scData"]```
+* ```scAppNames```: Name of the Apps that need to be observed to ensure they are always running in the target ```"scDatabase"``` Starcounter database. Example ```["App3","App2"]```
 
 The array ```scAppNames``` of Starcounter applications are evaluated by parsing the output from ```staradmin.exe```:
 
 ```csharp
 // stdOutput is output from `staradmin --database={scDatabase} list app`
 bool allAppsAreRunning = scAppNames.All(appName => stdOutput.Contains($"{appName} (in {scDatabase})"));
+```
+
+## Configuring the service for Starcounter Custom Applications. 
+
+The `cbwatchdog` service can be configured to make sure all Starcounter Custom Applications and the required services are always up and running if they get stopped accidentally.
+
+*Step 1: Creating a `.bat` file* 
+
+Create a `.bat` file with the commands that starts a Starcounter Database and the applications that using that Database. Following is a sample `.bat` file:
+
+```
+echo off
+
+staradmin -d=DB1 start server :: Command that starts a database and the server.
+
+star -d=DB1 E:\Work\Starcounter\App1\App1\bin\Debug\App1.exe :: Command that hosts an application inside a Database server.
+star -d=DB1 E:\Work\Starcounter\App2\App2\bin\Debug\App2.exe :: -do-
+
+```
+
+Full list of commands that you can use with Starcounter Application Framework can be found [here](https://docs.starcounter.io/guides/working-with-starcounter/star-cli)
+
+*Step 2: Modifying the`cbwatchdog.json` file* 
+
+Modify the config file to use the `.bat` file created in previous step. Following is a sample `cbwatchdog.config` file:
+
+```json
+{
+  "healthCheckInterval": "10000",
+  "recoveryExecutionTimeout": "300000",
+  "noConsoleForRecoveryScript": "false",
+  "criticalCounts": "10",
+  "recoveryItems": [
+    {
+      "recoveryBatch": "C:\\Watchdog\\cbwatchdog.bat", // File path for the `.bat` file created in Step 1
+      "scDatabase": "DB1",
+      "overrideRecoveryExecutionTimeout": "10000",
+	  "starcounterBinDirectory": "C:\\Program Files\\Starcounter", // Directory where Starcounter Application Framework  is installed on your computer.
+      "processes": ["scData"],
+      "scAppNames": ["App1","App2"]
+    }
+  ]
+}
+
 ```
 
 ## Uninstallation
