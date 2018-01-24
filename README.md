@@ -142,7 +142,7 @@ Full list of commands that you can use with Starcounter Application Framework ca
 
 Modify the config file to use the `.bat` file created in previous step. Following is a sample `cbwatchdog.config` file:
 
-```json
+```
 {
   "healthCheckInterval": "10000",
   "recoveryExecutionTimeout": "300000",
