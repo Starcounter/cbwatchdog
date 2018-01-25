@@ -142,7 +142,7 @@ Full list of commands that you can use with Starcounter Application Framework ca
 
 Modify the config file to use the `.bat` file created in previous step. Following is a sample `cbwatchdog.config` file:
 
-```
+```json
 {
   "healthCheckInterval": "10000",
   "recoveryExecutionTimeout": "300000",
@@ -150,10 +150,10 @@ Modify the config file to use the `.bat` file created in previous step. Followin
   "criticalCounts": "10",
   "recoveryItems": [
     {
-      "recoveryBatch": "C:\\Watchdog\\cbwatchdog.bat", // File path for the `.bat` file created in Step 1
+      "recoveryBatch": "C:\\Watchdog\\cbwatchdog.bat", 
       "scDatabase": "DB1",
       "overrideRecoveryExecutionTimeout": "10000",
-	  "starcounterBinDirectory": "C:\\Program Files\\Starcounter", // Directory where Starcounter Application Framework  is installed on your computer.
+	  "starcounterBinDirectory": "C:\\Program Files\\Starcounter", 
       "processes": ["scData"],
       "scAppNames": ["App1","App2"]
     }
@@ -161,6 +161,10 @@ Modify the config file to use the `.bat` file created in previous step. Followin
 }
 
 ```
+### What happens under the hood
+
+The `cbwatchdog` service monitors the `scDatabase`, `processes` and `scAppNames` after every `healthCheckInterval` milliseconds. If any of these services or apps found missing on the computer it just runs the 
+`.bat` file mentioned `recoveryBatch` in the config file.
 
 ## Uninstallation
 
