@@ -86,7 +86,7 @@ The full structure of ```cbwatchdog.json``` is as following:
       "recoveryBatch": "cbwatchdog.bat",
       "scDatabase": "default",
       "overrideRecoveryExecutionTimeout": "10000",
-      "starcounterBinDirectory": "C:\\Program Files\\Starcounter",
+	"starcounterBinDirectory": "C:\\Program Files\\Starcounter",
       "processes": ["ProcessName"],
       "scAppNames": ["ApplicationName"]
     }
@@ -153,7 +153,7 @@ Modify the config file to use the `.bat` file created in previous step. Followin
       "recoveryBatch": "C:\\Watchdog\\cbwatchdog.bat", 
       "scDatabase": "DB1",
       "overrideRecoveryExecutionTimeout": "10000",
-      "starcounterBinDirectory": "C:\\Program Files\\Starcounter", 
+	"starcounterBinDirectory": "C:\\Program Files\\Starcounter", 
       "processes": ["scData"],
       "scAppNames": ["App1","App2"]
     }
@@ -161,7 +161,7 @@ Modify the config file to use the `.bat` file created in previous step. Followin
 }
 
 ```
-### What happens under the hood
+#### What happens under the hood
 
 The `cbwatchdog` service monitors the `scDatabase`, `processes` and `scAppNames` after every `healthCheckInterval` milliseconds. If any of these services or apps found missing on the computer it just runs the 
 `.bat` file mentioned `recoveryBatch` in the config file.
