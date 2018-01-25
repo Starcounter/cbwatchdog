@@ -164,7 +164,7 @@ Modify the config file to use the `.bat` file created in previous step. Followin
 #### What happens under the hood
 
 The `cbwatchdog` service monitors the `scDatabase`, `processes` and `scAppNames` after every `healthCheckInterval` milliseconds. If any of these services or apps found missing on the computer it just runs the 
-`.bat` file mentioned `recoveryBatch` in the config file.
+`.bat` file mentioned in `recoveryBatch` inside the `cbwatchdog.json` config file.
 
 ## Uninstallation
 
