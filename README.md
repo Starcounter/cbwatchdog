@@ -86,7 +86,7 @@ The full structure of ```cbwatchdog.json``` is as following:
       "recoveryBatch": "cbwatchdog.bat",
       "scDatabase": "default",
       "overrideRecoveryExecutionTimeout": "10000",
-	 "starcounterBinDirectory": "C:\\Program Files\\Starcounter",
+      "starcounterBinDirectory": "C:\\Program Files\\Starcounter",
       "processes": ["ProcessName"],
       "scAppNames": ["ApplicationName"]
     }
@@ -153,7 +153,7 @@ Modify the config file to use the `.bat` file created in previous step. Followin
       "recoveryBatch": "C:\\Watchdog\\cbwatchdog.bat", 
       "scDatabase": "DB1",
       "overrideRecoveryExecutionTimeout": "10000",
-	 "starcounterBinDirectory": "C:\\Program Files\\Starcounter", 
+      "starcounterBinDirectory": "C:\\Program Files\\Starcounter", 
       "processes": ["scData"],
       "scAppNames": ["App1","App2"]
     }
